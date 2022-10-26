@@ -76,9 +76,8 @@ pub struct VideoPlayer {
     pub bus: gst::Bus,
     pub frame: Option<Image<image::Handle>>,
     source: gst::Element,
-    sink: gst::Element,
 
-    // receiver: futures_channel::mpsc::UnboundedReceiver<image::Handle>,
+    receiver: futures_channel::mpsc::UnboundedReceiver<image::Handle>,
     width: i32,
     height: i32,
     framerate: f64,
@@ -164,13 +163,59 @@ impl VideoPlayer {
             std::time::Duration::from_secs(0)
         };
 
+        let app_sink = sink
+            .clone()
+            .dynamic_cast::<gst_app::AppSink>()
+            .expect("Sink element is expected to be an appsink!");
+
+        app_sink.set_property("emit-signals", true);
+
+        app_sink.set_caps(Some(
+            &gst_video::VideoCapsBuilder::new()
+                .format(VideoFormat::Bgra)
+                .pixel_aspect_ratio(gst::Fraction::new(1, 1))
+                .build(),
+        ));
+
+        // create channel for sending video frames down
+        let (sender, receiver) = futures_channel::mpsc::unbounded::<image::Handle>();
+
+        app_sink.set_callbacks(
+            gst_app::AppSinkCallbacks::builder()
+                .new_sample(move |sink| {
+                    let sample = sink.pull_sample().map_err(|_| gst::FlowError::Eos)?;
+                    let buffer = sample.buffer().ok_or(gst::FlowError::Error)?;
+                    let map = buffer.map_readable().map_err(|_| gst::FlowError::Error)?;
+
+                    let pad = sink.static_pad("sink").ok_or(gst::FlowError::Error)?;
+
+                    let caps = pad.current_caps().ok_or(gst::FlowError::Error)?;
+                    let s = caps.structure(0).ok_or(gst::FlowError::Error)?;
+                    let width = s.get::<i32>("width").map_err(|_| gst::FlowError::Error)?;
+                    let height = s.get::<i32>("height").map_err(|_| gst::FlowError::Error)?;
+
+                    if sender.poll_ready().is_ready() {
+                        sender
+                            .unbounded_send(image::Handle::from_pixels(
+                                width as u32,
+                                height as u32,
+                                map.as_slice().to_owned(),
+                            ))
+                            .expect("Failed to send");
+                    }
+
+                    Ok(gst::FlowSuccess::Ok)
+                })
+                .build(),
+        );
+
         Ok(VideoPlayer {
             bus: pipeline
                 .bus()
                 .expect("Pipeline without bus. Shouldn't happen!"),
             source: pipeline,
-            sink,
             frame: None,
+            receiver,
             width,
             height,
             framerate: framerate.numer() as f64 / framerate.denom() as f64,
@@ -281,56 +326,9 @@ impl VideoPlayer {
     }
 
     pub fn subscription(&self) -> Subscription<VideoEvent> {
-        let app_sink = self
-            .sink
-            .clone()
-            .dynamic_cast::<gst_app::AppSink>()
-            .expect("Sink element is expected to be an appsink!");
-
-        app_sink.set_property("emit-signals", true);
-
-        app_sink.set_caps(Some(
-            &gst_video::VideoCapsBuilder::new()
-                .format(VideoFormat::Bgra)
-                .pixel_aspect_ratio(gst::Fraction::new(1, 1))
-                .build(),
-        ));
-
-        // create channel for sending video frames down
-        let (sender, receiver) = futures_channel::mpsc::unbounded::<image::Handle>();
-
-        app_sink.set_callbacks(
-            gst_app::AppSinkCallbacks::builder()
-                .new_sample(move |sink| {
-                    let sample = sink.pull_sample().map_err(|_| gst::FlowError::Eos)?;
-                    let buffer = sample.buffer().ok_or(gst::FlowError::Error)?;
-                    let map = buffer.map_readable().map_err(|_| gst::FlowError::Error)?;
-
-                    let pad = sink.static_pad("sink").ok_or(gst::FlowError::Error)?;
-
-                    let caps = pad.current_caps().ok_or(gst::FlowError::Error)?;
-                    let s = caps.structure(0).ok_or(gst::FlowError::Error)?;
-                    let width = s.get::<i32>("width").map_err(|_| gst::FlowError::Error)?;
-                    let height = s.get::<i32>("height").map_err(|_| gst::FlowError::Error)?;
-
-                    if sender.poll_ready().is_ready() {
-                        sender
-                            .unbounded_send(image::Handle::from_pixels(
-                                width as u32,
-                                height as u32,
-                                map.as_slice().to_owned(),
-                            ))
-                            .expect("Failed to send");
-                    }
-
-                    Ok(gst::FlowSuccess::Ok)
-                })
-                .build(),
-        );
-
         subscription::unfold(
             "subscription",
-            State::NextFrame(receiver),
+            State::NextFrame(self.receiver),
             |state| async move {
                 match state {
                     State::NextFrame(stream) => {
