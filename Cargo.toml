@@ -1,0 +1,32 @@
+[package]
+edition = "2021"
+name = "iced_pure_video_player"
+version = "0.1.0"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = "1"
+byte-slice-cast = "1"
+derive_more = "*"
+futures-channel = "0.3"
+glib = {git = "https://github.com/gtk-rs/gtk-rs-core"}
+gst = {package = "gstreamer", git = "https://gitlab.freedesktop.org/gstreamer/gstreamer-rs.git"}
+gst-audio = {package = "gstreamer-audio", git = "https://gitlab.freedesktop.org/gstreamer/gstreamer-rs.git"}
+gst_app = {package = "gstreamer-app", git = "https://gitlab.freedesktop.org/gstreamer/gstreamer-rs.git"}
+gst_video = {package = "gstreamer-video", git = "https://gitlab.freedesktop.org/gstreamer/gstreamer-rs.git"}
+rand = "*"
+tokio = {version = "1", features = ["time"]}
+
+[dependencies.iced_native]
+branch = "master"
+git = "https://github.com/iced-rs/iced"
+
+[dependencies.iced_lazy]
+branch = "master"
+git = "https://github.com/iced-rs/iced"
+
+[dependencies.iced]
+branch = "master"
+features = ["tokio", "debug", "image", "canvas"]
+git = "https://github.com/iced-rs/iced"
