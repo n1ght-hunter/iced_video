@@ -95,15 +95,6 @@ pub struct VideoPlayer {
     pub restart_stream: bool,
 }
 
-// receiver: Arc<futures_channel::mpsc::UnboundedReceiver<image::Handle>>,
-// impl Drop for VideoPlayer {
-//     fn drop(&mut self) {
-//         self.source
-//             .set_state(gst::State::Null)
-//             .expect("failed to set state");
-//     }
-// }
-
 impl VideoPlayer {
     /// Create a new video player from a given video which loads from `uri`.
     ///
@@ -158,6 +149,8 @@ impl VideoPlayer {
             .get::<gst::Fraction>("framerate")
             .map_err(|_| MissingCaps("caps"))?;
 
+
+        // if live getting the duration doesn't make sense 
         let duration = if !live {
             std::time::Duration::from_nanos(
                 pipeline
@@ -186,6 +179,8 @@ impl VideoPlayer {
         // create channel for sending video frames down
         let (sender, receiver) = futures_channel::mpsc::unbounded::<image::Handle>();
 
+        // callback for video sink
+        // creates then sends video handle to subscription 
         app_sink.set_callbacks(
             gst_app::AppSinkCallbacks::builder()
                 .new_sample(move |sink| {
@@ -331,13 +326,13 @@ impl VideoPlayer {
         self.paused
     }
 
-    // /// Jumps to a specific position in the media.
-    // /// The seeking is not perfectly accurate.
-    // pub fn seek(&mut self, position: impl Into<Position>) -> Result<(), Error> {
-    //     self.source
-    //         .seek_simple(gst::SeekFlags::FLUSH, position.into())?;
-    //     Ok(())
-    // }
+    /// Jumps to a specific position in the media.
+    /// The seeking is not perfectly accurate.
+    pub fn seek(&mut self, position: impl FormattedValue) -> Result<(), Error> {
+        self.source
+            .seek_simple(gst::SeekFlags::FLUSH, position)?;
+        Ok(())
+    }
 
     /// Get the current playback position in time.
     pub fn position(&self) -> std::time::Duration {
@@ -354,27 +349,6 @@ impl VideoPlayer {
     pub fn duration(&self) -> std::time::Duration {
         self.duration
     }
-
-    // pub fn subscription(&self) -> Subscription<VideoEvent> {
-    //     let receiver = self.receiver.;
-
-    //     subscription::unfold(
-    //         "subscription",
-    //         State::NextFrame(receiver),
-    //         |state| async move {
-    //             match state {
-    //                 State::NextFrame(stream) => {
-    //                     let (item, stream) = stream.into_future().await;
-
-    //                     (
-    //                         Some(VideoEvent::FrameUpdate(item)),
-    //                         State::NextFrame(stream),
-    //                     )
-    //                 }
-    //             }
-    //         },
-    //     )
-    // }
 
     /// Restarts a stream; seeks to the first frame and unpauses, sets the `eos` flag to false.
     pub fn restart_stream(&mut self) -> Result<(), Error> {
