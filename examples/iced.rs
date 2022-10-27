@@ -1,9 +1,9 @@
 use iced::{
     executor,
-    widget::{container, Image, Text, column},
+    widget::{column, container, Image, Text},
     Application, Command, Theme,
 };
-use iced_native::{image};
+use iced_native::image;
 use iced_pure_video_player::{VideoEvent, VideoPlayer};
 
 fn main() {
@@ -47,11 +47,15 @@ impl Application for App {
         match message {
             Message::Video(event) => match event {
                 VideoEvent::Connected(player, handle) => {
+                    println!("connected");
                     self.video = Some(player);
                     self.frame = handle;
                 }
                 VideoEvent::Disconnected => println!("Disconnected"),
-                VideoEvent::FrameUpdate(handle) => self.frame = handle,
+                VideoEvent::FrameUpdate(handle) => {
+                    println!("FrameUpdate, handle {:?}", handle);
+                    self.frame = handle;
+                }
             },
         }
 
@@ -68,16 +72,14 @@ impl Application for App {
         } else {
             Image::new(image::Handle::from_pixels(0, 0, vec![]))
         };
-        let text =  if let Some(video) = &self.video {
+        let text = if let Some(video) = &self.video {
             Text::new(format!(
                 "{:#?}s / {:#?}s",
                 video.position().as_secs(),
                 video.duration().as_secs()
             ))
         } else {
-            Text::new(format!(
-                "0s / 0s",
-            ))
+            Text::new(format!("0s / 0s",))
         };
         container(column![image, text]).into()
     }

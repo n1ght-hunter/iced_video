@@ -1,11 +1,12 @@
-use std::sync::Arc;
+use std::sync::mpsc::Receiver;
+use std::sync::{mpsc, Arc};
 
 use gst::prelude::*;
 
 use anyhow::Error;
 use derive_more::{Display, Error};
 use gst_video::VideoFormat;
-use iced::futures::SinkExt;
+use iced::futures::sink::SinkExt;
 use iced::futures::StreamExt;
 
 use iced::{subscription, Subscription};
@@ -52,11 +53,8 @@ pub enum VideoEvent {
 
 #[derive(Debug)]
 enum State {
-    NextFrame(futures_channel::mpsc::UnboundedReceiver<image::Handle>),
-    Starting(
-        VideoPlayer,
-        futures_channel::mpsc::UnboundedReceiver<image::Handle>,
-    ),
+    NextFrame(Receiver<iced_native::image::Handle>),
+    Starting(VideoPlayer, Receiver<iced_native::image::Handle>),
     // Connected(futures_channel::mpsc::UnboundedReceiver<image::Handle>),
 }
 
@@ -80,7 +78,6 @@ struct ErrorMessage {
 #[derive(Clone, Debug)]
 pub struct VideoPlayer {
     pub bus: gst::Bus,
-    pub frame: Option<image::Handle>,
     pub source: gst::Element,
 
     pub width: i32,
@@ -149,8 +146,7 @@ impl VideoPlayer {
             .get::<gst::Fraction>("framerate")
             .map_err(|_| MissingCaps("caps"))?;
 
-
-        // if live getting the duration doesn't make sense 
+        // // if live getting the duration doesn't make sense
         let duration = if !live {
             std::time::Duration::from_nanos(
                 pipeline
@@ -176,11 +172,12 @@ impl VideoPlayer {
                 .build(),
         ));
 
-        // create channel for sending video frames down
-        let (sender, receiver) = futures_channel::mpsc::unbounded::<image::Handle>();
+        // // create channel for sending video frames down
+        let (sender, receiver) = mpsc::channel();
+        // let (mut sender, receiver) = futures_channel::mpsc::channel::<image::Handle>(100);
 
-        // callback for video sink
-        // creates then sends video handle to subscription 
+        // // callback for video sink
+        // // creates then sends video handle to subscription
         app_sink.set_callbacks(
             gst_app::AppSinkCallbacks::builder()
                 .new_sample(move |sink| {
@@ -195,15 +192,13 @@ impl VideoPlayer {
                     let width = s.get::<i32>("width").map_err(|_| gst::FlowError::Error)?;
                     let height = s.get::<i32>("height").map_err(|_| gst::FlowError::Error)?;
 
-                    if !sender.is_closed() {
-                        sender
-                            .unbounded_send(image::Handle::from_pixels(
-                                width as u32,
-                                height as u32,
-                                map.as_slice().to_owned(),
-                            ))
-                            .expect("Failed to send");
-                    }
+                    sender
+                        .send(image::Handle::from_pixels(
+                            width as u32,
+                            height as u32,
+                            map.as_slice().to_owned(),
+                        ))
+                        .map_err(|_| gst::FlowError::Error)?;
 
                     Ok(gst::FlowSuccess::Ok)
                 })
@@ -214,8 +209,6 @@ impl VideoPlayer {
                 .bus()
                 .expect("Pipeline without bus. Shouldn't happen!"),
             source: pipeline,
-            frame: None,
-            // receiver: Arc::new(receiver),
             width,
             height,
             framerate: framerate.numer() as f64 / framerate.denom() as f64,
@@ -233,18 +226,18 @@ impl VideoPlayer {
             |state| async move {
                 match state {
                     State::Starting(video_player, stream) => {
-                        let (item, stream) = stream.into_future().await;
+                        let item = stream.recv().unwrap();
 
                         (
-                            Some(VideoEvent::Connected(video_player, item)),
+                            Some(VideoEvent::Connected(video_player, Some(item))),
                             State::NextFrame(stream),
                         )
                     }
                     State::NextFrame(stream) => {
-                        let (item, stream) = stream.into_future().await;
+                        let item = stream.recv().unwrap();
 
                         (
-                            Some(VideoEvent::FrameUpdate(item)),
+                            Some(VideoEvent::FrameUpdate(Some(item))),
                             State::NextFrame(stream),
                         )
                     }
@@ -329,8 +322,7 @@ impl VideoPlayer {
     /// Jumps to a specific position in the media.
     /// The seeking is not perfectly accurate.
     pub fn seek(&mut self, position: impl FormattedValue) -> Result<(), Error> {
-        self.source
-            .seek_simple(gst::SeekFlags::FLUSH, position)?;
+        self.source.seek_simple(gst::SeekFlags::FLUSH, position)?;
         Ok(())
     }
 
