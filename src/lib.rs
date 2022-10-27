@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use gst::prelude::*;
 
 use anyhow::Error;
@@ -41,9 +43,9 @@ impl From<u64> for Position {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone, Debug)]
 pub enum VideoEvent {
-    Connected,
+    Connected(VideoPlayer, Option<image::Handle>),
     Disconnected,
     FrameUpdate(Option<image::Handle>),
 }
@@ -51,7 +53,10 @@ pub enum VideoEvent {
 #[derive(Debug)]
 enum State {
     NextFrame(futures_channel::mpsc::UnboundedReceiver<image::Handle>),
-    // Starting,
+    Starting(
+        VideoPlayer,
+        futures_channel::mpsc::UnboundedReceiver<image::Handle>,
+    ),
     // Connected(futures_channel::mpsc::UnboundedReceiver<image::Handle>),
 }
 
@@ -72,24 +77,25 @@ struct ErrorMessage {
     source: glib::Error,
 }
 
+#[derive(Clone, Debug)]
 pub struct VideoPlayer {
     pub bus: gst::Bus,
-    pub frame: Option<Image<image::Handle>>,
-    source: gst::Element,
+    pub frame: Option<image::Handle>,
+    pub source: gst::Element,
 
-    receiver: futures_channel::mpsc::UnboundedReceiver<image::Handle>,
-    width: i32,
-    height: i32,
-    framerate: f64,
-    duration: std::time::Duration,
+    pub width: i32,
+    pub height: i32,
+    pub framerate: f64,
+    pub duration: std::time::Duration,
 
-    paused: bool,
-    muted: bool,
-    looping: bool,
-    is_eos: bool,
-    restart_stream: bool,
+    pub paused: bool,
+    pub muted: bool,
+    pub looping: bool,
+    pub is_eos: bool,
+    pub restart_stream: bool,
 }
 
+// receiver: Arc<futures_channel::mpsc::UnboundedReceiver<image::Handle>>,
 // impl Drop for VideoPlayer {
 //     fn drop(&mut self) {
 //         self.source
@@ -104,7 +110,7 @@ impl VideoPlayer {
     /// If `live` is set then no duration is queried (as this will result in an error and is non-sensical for live streams).
     /// Set `live` if the streaming source is indefinite (e.g. a live stream).
     /// Note that this will cause the duration to be zero.
-    pub fn new(uri: &str, live: bool) -> Result<Self, Error> {
+    pub fn new(uri: &str, live: bool) -> Result<Subscription<VideoEvent>, Error> {
         // Initialize GStreamer
         gst::init()?;
 
@@ -194,7 +200,7 @@ impl VideoPlayer {
                     let width = s.get::<i32>("width").map_err(|_| gst::FlowError::Error)?;
                     let height = s.get::<i32>("height").map_err(|_| gst::FlowError::Error)?;
 
-                    if sender.poll_ready().is_ready() {
+                    if !sender.is_closed() {
                         sender
                             .unbounded_send(image::Handle::from_pixels(
                                 width as u32,
@@ -208,14 +214,13 @@ impl VideoPlayer {
                 })
                 .build(),
         );
-
-        Ok(VideoPlayer {
+        let video_player = VideoPlayer {
             bus: pipeline
                 .bus()
                 .expect("Pipeline without bus. Shouldn't happen!"),
             source: pipeline,
             frame: None,
-            receiver,
+            // receiver: Arc::new(receiver),
             width,
             height,
             framerate: framerate.numer() as f64 / framerate.denom() as f64,
@@ -225,7 +230,32 @@ impl VideoPlayer {
             looping: false,
             is_eos: false,
             restart_stream: false,
-        })
+        };
+
+        Ok(subscription::unfold(
+            "subscription",
+            State::Starting(video_player, receiver),
+            |state| async move {
+                match state {
+                    State::Starting(video_player, stream) => {
+                        let (item, stream) = stream.into_future().await;
+
+                        (
+                            Some(VideoEvent::Connected(video_player, item)),
+                            State::NextFrame(stream),
+                        )
+                    }
+                    State::NextFrame(stream) => {
+                        let (item, stream) = stream.into_future().await;
+
+                        (
+                            Some(VideoEvent::FrameUpdate(item)),
+                            State::NextFrame(stream),
+                        )
+                    }
+                }
+            },
+        ))
     }
 
     /// Get the size/resolution of the video as `(width, height)`.
@@ -325,24 +355,26 @@ impl VideoPlayer {
         self.duration
     }
 
-    pub fn subscription(&self) -> Subscription<VideoEvent> {
-        subscription::unfold(
-            "subscription",
-            State::NextFrame(self.receiver),
-            |state| async move {
-                match state {
-                    State::NextFrame(stream) => {
-                        let (item, stream) = stream.into_future().await;
+    // pub fn subscription(&self) -> Subscription<VideoEvent> {
+    //     let receiver = self.receiver.;
 
-                        (
-                            Some(VideoEvent::FrameUpdate(item)),
-                            State::NextFrame(stream),
-                        )
-                    }
-                }
-            },
-        )
-    }
+    //     subscription::unfold(
+    //         "subscription",
+    //         State::NextFrame(receiver),
+    //         |state| async move {
+    //             match state {
+    //                 State::NextFrame(stream) => {
+    //                     let (item, stream) = stream.into_future().await;
+
+    //                     (
+    //                         Some(VideoEvent::FrameUpdate(item)),
+    //                         State::NextFrame(stream),
+    //                     )
+    //                 }
+    //             }
+    //         },
+    //     )
+    // }
 
     /// Restarts a stream; seeks to the first frame and unpauses, sets the `eos` flag to false.
     pub fn restart_stream(&mut self) -> Result<(), Error> {
