@@ -7,7 +7,7 @@ use iced_native::{image, window};
 use iced_pure_video_player::{GSTMessage, VideoEvent, VideoPlayer};
 
 fn main() {
-    dotenv::dotenv().unwrap();
+    std::env::set_var("GST_DEBUG","0");
     App::run(Settings {
         exit_on_close_request: false,
         ..Default::default()

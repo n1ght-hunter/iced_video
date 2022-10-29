@@ -30,7 +30,3 @@ git = "https://github.com/iced-rs/iced"
 branch = "master"
 features = ["tokio", "debug", "image", "canvas"]
 git = "https://github.com/iced-rs/iced"
-
-
-[dev-dependencies]
-dotenv = "*"
