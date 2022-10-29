@@ -157,6 +157,7 @@ impl VideoPlayer {
         // Initialize GStreamer
         gst::init()?;
 
+        // playbin handle most sources and offers easy to impl controls
         let source =
             gst::ElementFactory::make("playbin", None).map_err(|_| MissingElement("playbin"))?;
 
