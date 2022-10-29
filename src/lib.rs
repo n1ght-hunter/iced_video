@@ -46,15 +46,15 @@ impl From<u64> for Position {
 
 #[derive(Clone, Debug)]
 pub enum VideoEvent {
-    Connected(VideoPlayer, Option<image::Handle>),
+    Connected(VideoPlayer, Option<GSTChannel>),
     Disconnected,
-    FrameUpdate(Option<image::Handle>),
+    FrameUpdate(Option<GSTChannel>),
 }
 
 #[derive(Debug)]
 enum State {
-    NextFrame(Receiver<iced_native::image::Handle>),
-    Starting(VideoPlayer, Receiver<iced_native::image::Handle>),
+    NextFrame(Receiver<GSTChannel>),
+    Starting(VideoPlayer, Receiver<GSTChannel>),
     // Connected(futures_channel::mpsc::UnboundedReceiver<image::Handle>),
 }
 
@@ -76,6 +76,53 @@ struct ErrorMessage {
 }
 
 #[derive(Clone, Debug)]
+pub enum GSTChannel {
+    Image(image::Handle),
+    Message(GSTMessage),
+}
+#[derive(Clone, Debug)]
+pub enum GSTMessage {
+    Eos,
+    Error,
+    Warning,
+    Info,
+    Tag,
+    Buffering,
+    StateChanged,
+    StateDirty,
+    StepDone,
+    ClockProvide,
+    ClockLost,
+    NewClock,
+    StructureChange,
+    StreamStatus,
+    Application,
+    Element,
+    SegmentStart,
+    SegmentDone,
+    DurationChanged,
+    Latency,
+    AsyncStart,
+    AsyncDone,
+    RequestState,
+    StepStart,
+    Qos,
+    Progress,
+    Toc,
+    ResetTime,
+    StreamStart,
+    NeedContext,
+    HaveContext,
+    DeviceAdded,
+    DeviceRemoved,
+    PropertyNotify,
+    StreamCollection,
+    StreamsSelected,
+    Redirect,
+    Other,
+}
+
+#[derive(Clone, Debug)]
 pub struct VideoPlayer {
     pub bus: gst::Bus,
     pub source: gst::Element,
@@ -92,6 +139,14 @@ pub struct VideoPlayer {
     pub restart_stream: bool,
 }
 
+impl Drop for VideoPlayer {
+    fn drop(&mut self) {
+        self.source
+            .set_state(gst::State::Null)
+            .expect("failed to set state");
+    }
+}
+
 impl VideoPlayer {
     /// Create a new video player from a given video which loads from `uri`.
     ///
@@ -102,10 +157,10 @@ impl VideoPlayer {
         // Initialize GStreamer
         gst::init()?;
 
-        let pipeline =
+        let source =
             gst::ElementFactory::make("playbin", None).map_err(|_| MissingElement("playbin"))?;
 
-        pipeline.set_property("uri", uri);
+        source.set_property("uri", uri);
 
         // Create elements that go inside the sink bin
         let videoconvert = gst::ElementFactory::make("videoconvert", None)
@@ -114,13 +169,24 @@ impl VideoPlayer {
         let scale = gst::ElementFactory::make("videoscale", None)
             .map_err(|_| MissingElement("videoscale"))?;
 
-        let sink = gst::ElementFactory::make("appsink", Some("sink"))
-            .map_err(|_| MissingElement("appsink"))?;
+        let app_sink = gst::ElementFactory::make("appsink", Some("sink"))
+            .map_err(|_| MissingElement("appsink"))?
+            .dynamic_cast::<gst_app::AppSink>()
+            .unwrap();
+
+        app_sink.set_property("emit-signals", true);
+
+        app_sink.set_caps(Some(
+            &gst_video::VideoCapsBuilder::new()
+                .format(VideoFormat::Bgra)
+                .pixel_aspect_ratio(gst::Fraction::new(1, 1))
+                .build(),
+        ));
 
         // Create the sink bin, add the elements and link them
         let bin = gst::Bin::new(Some("video-bin"));
-        bin.add_many(&[&videoconvert, &scale, &sink])?;
-        gst::Element::link_many(&[&videoconvert, &scale, &sink])?;
+        bin.add_many(&[&videoconvert, &scale, app_sink.as_ref()])?;
+        gst::Element::link_many(&[&videoconvert, &scale, app_sink.as_ref()])?;
 
         // create ghost pad
         let pad = videoconvert
@@ -130,12 +196,12 @@ impl VideoPlayer {
         ghost_pad.set_active(true)?;
         bin.add_pad(&ghost_pad)?;
 
-        pipeline.set_property("video-sink", &bin);
+        source.set_property("video-sink", &bin);
 
-        pipeline.set_state(gst::State::Playing)?;
+        source.set_state(gst::State::Playing)?;
 
         // wait for up to 5 seconds until the decoder gets the source capabilities
-        pipeline.state(gst::ClockTime::from_seconds(5)).0?;
+        source.state(gst::ClockTime::from_seconds(5)).0?;
 
         let caps = ghost_pad.current_caps().ok_or(MissingCaps("caps"))?;
         let s = caps.structure(0).ok_or(MissingCaps("caps"))?;
@@ -149,7 +215,7 @@ impl VideoPlayer {
         // // if live getting the duration doesn't make sense
         let duration = if !live {
             std::time::Duration::from_nanos(
-                pipeline
+                source
                     .query_duration::<gst::ClockTime>()
                     .ok_or(MissingCaps("caps"))?
                     .nseconds(),
@@ -158,23 +224,11 @@ impl VideoPlayer {
             std::time::Duration::from_secs(0)
         };
 
-        let app_sink = sink
-            .clone()
-            .dynamic_cast::<gst_app::AppSink>()
-            .expect("Sink element is expected to be an appsink!");
-
-        app_sink.set_property("emit-signals", true);
-
-        app_sink.set_caps(Some(
-            &gst_video::VideoCapsBuilder::new()
-                .format(VideoFormat::Bgra)
-                .pixel_aspect_ratio(gst::Fraction::new(1, 1))
-                .build(),
-        ));
-
         // // create channel for sending video frames down
-        let (sender, receiver) = mpsc::channel();
+        let (sender, receiver) = mpsc::channel::<GSTChannel>();
         // let (mut sender, receiver) = futures_channel::mpsc::channel::<image::Handle>(100);
+
+        let sender1 = sender.clone();
 
         // // callback for video sink
         // // creates then sends video handle to subscription
@@ -193,22 +247,83 @@ impl VideoPlayer {
                     let height = s.get::<i32>("height").map_err(|_| gst::FlowError::Error)?;
 
                     sender
-                        .send(image::Handle::from_pixels(
+                        .send(GSTChannel::Image(image::Handle::from_pixels(
                             width as u32,
                             height as u32,
                             map.as_slice().to_owned(),
-                        ))
+                        )))
                         .map_err(|_| gst::FlowError::Error)?;
 
                     Ok(gst::FlowSuccess::Ok)
                 })
                 .build(),
         );
+
+        let bus = source
+            .bus()
+            .expect("Pipeline without bus. Shouldn't happen!");
+
+        bus.add_watch(move |_bus, msg| {
+            println!("event");
+
+            let view = msg.view();
+
+            let message = match view {
+                gst::MessageView::Eos(_) => GSTMessage::Eos,
+                gst::MessageView::Error(_) => GSTMessage::Error,
+                gst::MessageView::Warning(_) => GSTMessage::Warning,
+                gst::MessageView::Info(_) => GSTMessage::Info,
+                gst::MessageView::Tag(_) => GSTMessage::Tag,
+                gst::MessageView::Buffering(_) => GSTMessage::Buffering,
+                gst::MessageView::StateChanged(_) => GSTMessage::StateChanged,
+                gst::MessageView::StateDirty(_) => GSTMessage::StateDirty,
+                gst::MessageView::StepDone(_) => GSTMessage::StepDone,
+                gst::MessageView::ClockProvide(_) => GSTMessage::ClockProvide,
+                gst::MessageView::ClockLost(_) => GSTMessage::ClockLost,
+                gst::MessageView::NewClock(_) => GSTMessage::NewClock,
+                gst::MessageView::StructureChange(_) => GSTMessage::StructureChange,
+                gst::MessageView::StreamStatus(_) => GSTMessage::StreamStatus,
+                gst::MessageView::Application(_) => GSTMessage::Application,
+                gst::MessageView::Element(_) => GSTMessage::Element,
+                gst::MessageView::SegmentStart(_) => GSTMessage::SegmentStart,
+                gst::MessageView::SegmentDone(_) => GSTMessage::SegmentDone,
+                gst::MessageView::DurationChanged(_) => GSTMessage::DurationChanged,
+                gst::MessageView::Latency(_) => GSTMessage::Latency,
+                gst::MessageView::AsyncStart(_) => GSTMessage::AsyncStart,
+                gst::MessageView::AsyncDone(_) => GSTMessage::AsyncDone,
+                gst::MessageView::RequestState(_) => GSTMessage::RequestState,
+                gst::MessageView::StepStart(_) => GSTMessage::StepStart,
+                gst::MessageView::Qos(_) => GSTMessage::Qos,
+                gst::MessageView::Progress(_) => GSTMessage::Progress,
+                gst::MessageView::Toc(_) => GSTMessage::Toc,
+                gst::MessageView::ResetTime(_) => GSTMessage::ResetTime,
+                gst::MessageView::StreamStart(_) => GSTMessage::StreamStart,
+                gst::MessageView::NeedContext(_) => GSTMessage::NeedContext,
+                gst::MessageView::HaveContext(_) => GSTMessage::HaveContext,
+                gst::MessageView::DeviceAdded(_) => GSTMessage::DeviceAdded,
+                gst::MessageView::DeviceRemoved(_) => GSTMessage::DeviceRemoved,
+                gst::MessageView::PropertyNotify(_) => GSTMessage::PropertyNotify,
+                gst::MessageView::StreamCollection(_) => GSTMessage::StreamCollection,
+                gst::MessageView::StreamsSelected(_) => GSTMessage::StreamsSelected,
+                gst::MessageView::Redirect(_) => GSTMessage::Redirect,
+                gst::MessageView::Other => GSTMessage::Other,
+                _ => GSTMessage::Other,
+            };
+
+            println!("message: {:?}", message);
+
+            sender1
+                .send(GSTChannel::Message(message))
+                .expect("unable to send message");
+
+            // Tell the mainloop to continue executing this callback.
+            glib::Continue(true)
+        })
+        .expect("Failed to add bus watch");
+
         let video_player = VideoPlayer {
-            bus: pipeline
-                .bus()
-                .expect("Pipeline without bus. Shouldn't happen!"),
-            source: pipeline,
+            bus,
+            source,
             width,
             height,
             framerate: framerate.numer() as f64 / framerate.denom() as f64,
@@ -340,6 +455,12 @@ impl VideoPlayer {
     #[inline(always)]
     pub fn duration(&self) -> std::time::Duration {
         self.duration
+    }
+
+    pub fn exit(&mut self) -> Result<(), Error> {
+        println!("end stream");
+        self.source.send_event(gst::event::Eos::new());
+        Ok(())
     }
 
     /// Restarts a stream; seeks to the first frame and unpauses, sets the `eos` flag to false.
