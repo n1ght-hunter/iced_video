@@ -13,6 +13,7 @@
 - optional overlay with controls
 - simplify usage 
 - update widget without cause entire view to be updated
+- option to popout player
 
 
 ### License
