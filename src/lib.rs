@@ -1,16 +1,13 @@
-use std::sync::mpsc::Receiver;
-use std::sync::{mpsc, Arc};
-
-use gst::prelude::*;
-
 use anyhow::Error;
 use derive_more::{Display, Error};
-use gst_video::VideoFormat;
-use iced::futures::sink::SinkExt;
-use iced::futures::StreamExt;
+pub use gst::{prelude::*, Bus, Message};
+pub use gst::{
+    traits::{ElementExt, PadExt},
+    FlowError, FlowSuccess, MessageView,
+};
+use gst_app::AppSink;
+pub use gst_video::VideoFormat;
 
-use iced::{subscription, Subscription};
-use iced_native::{image, widget::Image};
 
 /// Position in the media.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -44,20 +41,6 @@ impl From<u64> for Position {
     }
 }
 
-#[derive(Clone, Debug)]
-pub enum VideoEvent {
-    Connected(VideoPlayer, Option<GSTChannel>),
-    Disconnected,
-    FrameUpdate(Option<GSTChannel>),
-}
-
-#[derive(Debug)]
-enum State {
-    NextFrame(Receiver<GSTChannel>),
-    Starting(VideoPlayer, Receiver<GSTChannel>),
-    // Connected(futures_channel::mpsc::UnboundedReceiver<image::Handle>),
-}
-
 #[derive(Debug, Display, Error)]
 #[display(fmt = "Missing element {}", _0)]
 struct MissingElement(#[error(not(source))] &'static str);
@@ -75,11 +58,6 @@ struct ErrorMessage {
     source: glib::Error,
 }
 
-#[derive(Clone, Debug)]
-pub enum GSTChannel {
-    Image(image::Handle),
-    Message(GSTMessage),
-}
 #[derive(Clone, Debug)]
 pub enum GSTMessage {
     Eos,
@@ -124,19 +102,18 @@ pub enum GSTMessage {
 
 #[derive(Clone, Debug)]
 pub struct VideoPlayer {
-    pub bus: gst::Bus,
-    pub source: gst::Element,
+    bus: gst::Bus,
+    source: gst::Element,
 
-    pub width: i32,
-    pub height: i32,
-    pub framerate: f64,
-    pub duration: std::time::Duration,
-
-    pub paused: bool,
-    pub muted: bool,
-    pub looping: bool,
-    pub is_eos: bool,
-    pub restart_stream: bool,
+    width: i32,
+    height: i32,
+    framerate: f64,
+    duration: std::time::Duration,
+    paused: bool,
+    muted: bool,
+    looping: bool,
+    is_eos: bool,
+    restart_stream: bool,
 }
 
 impl Drop for VideoPlayer {
@@ -153,24 +130,38 @@ impl VideoPlayer {
     /// If `live` is set then no duration is queried (as this will result in an error and is non-sensical for live streams).
     /// Set `live` if the streaming source is indefinite (e.g. a live stream).
     /// Note that this will cause the duration to be zero.
-    pub fn new(uri: &str, live: bool) -> Result<Subscription<VideoEvent>, Error> {
+    pub fn new<C, F>(
+        uri: &str,
+        live: bool,
+        format: VideoFormat,
+        sample_callback: C,
+        message_callback: F,
+    ) -> Result<VideoPlayer, Error>
+    where
+        C: FnMut(&AppSink) -> Result<gst::FlowSuccess, gst::FlowError> + Send + 'static,
+        F: FnMut(&Bus, &Message) -> gst::prelude::Continue + Send + 'static,
+    {
         // Initialize GStreamer
         gst::init()?;
 
         // playbin handle most sources and offers easy to impl controls
-        let source =
-            gst::ElementFactory::make("playbin", None).map_err(|_| MissingElement("playbin"))?;
-
-        source.set_property("uri", uri);
+        let source = gst::ElementFactory::make("playbin")
+            .property("uri", uri)
+            .build()
+            .map_err(|_| MissingElement("playbin"))?;
 
         // Create elements that go inside the sink bin
-        let videoconvert = gst::ElementFactory::make("videoconvert", None)
+        let videoconvert = gst::ElementFactory::make("videoconvert")
+            .build()
             .map_err(|_| MissingElement("videoconvert"))?;
 
-        let scale = gst::ElementFactory::make("videoscale", None)
+        let scale = gst::ElementFactory::make("videoscale")
+            .build()
             .map_err(|_| MissingElement("videoscale"))?;
 
-        let app_sink = gst::ElementFactory::make("appsink", Some("sink"))
+        let app_sink = gst::ElementFactory::make("appsink")
+            .name("sink")
+            .build()
             .map_err(|_| MissingElement("appsink"))?
             .dynamic_cast::<gst_app::AppSink>()
             .unwrap();
@@ -179,7 +170,7 @@ impl VideoPlayer {
 
         app_sink.set_caps(Some(
             &gst_video::VideoCapsBuilder::new()
-                .format(VideoFormat::Bgra)
+                .format(format)
                 .pixel_aspect_ratio(gst::Fraction::new(1, 1))
                 .build(),
         ));
@@ -225,38 +216,11 @@ impl VideoPlayer {
             std::time::Duration::from_secs(0)
         };
 
-        // // create channel for sending video frames down
-        let (sender, receiver) = mpsc::channel::<GSTChannel>();
-        // let (mut sender, receiver) = futures_channel::mpsc::channel::<image::Handle>(100);
-
-        let sender1 = sender.clone();
-
         // // callback for video sink
         // // creates then sends video handle to subscription
         app_sink.set_callbacks(
             gst_app::AppSinkCallbacks::builder()
-                .new_sample(move |sink| {
-                    let sample = sink.pull_sample().map_err(|_| gst::FlowError::Eos)?;
-                    let buffer = sample.buffer().ok_or(gst::FlowError::Error)?;
-                    let map = buffer.map_readable().map_err(|_| gst::FlowError::Error)?;
-
-                    let pad = sink.static_pad("sink").ok_or(gst::FlowError::Error)?;
-
-                    let caps = pad.current_caps().ok_or(gst::FlowError::Error)?;
-                    let s = caps.structure(0).ok_or(gst::FlowError::Error)?;
-                    let width = s.get::<i32>("width").map_err(|_| gst::FlowError::Error)?;
-                    let height = s.get::<i32>("height").map_err(|_| gst::FlowError::Error)?;
-
-                    sender
-                        .send(GSTChannel::Image(image::Handle::from_pixels(
-                            width as u32,
-                            height as u32,
-                            map.as_slice().to_owned(),
-                        )))
-                        .map_err(|_| gst::FlowError::Error)?;
-
-                    Ok(gst::FlowSuccess::Ok)
-                })
+                .new_sample(sample_callback)
                 .build(),
         );
 
@@ -264,63 +228,8 @@ impl VideoPlayer {
             .bus()
             .expect("Pipeline without bus. Shouldn't happen!");
 
-        bus.add_watch(move |_bus, msg| {
-            println!("event");
-
-            let view = msg.view();
-
-            let message = match view {
-                gst::MessageView::Eos(_) => GSTMessage::Eos,
-                gst::MessageView::Error(_) => GSTMessage::Error,
-                gst::MessageView::Warning(_) => GSTMessage::Warning,
-                gst::MessageView::Info(_) => GSTMessage::Info,
-                gst::MessageView::Tag(_) => GSTMessage::Tag,
-                gst::MessageView::Buffering(_) => GSTMessage::Buffering,
-                gst::MessageView::StateChanged(_) => GSTMessage::StateChanged,
-                gst::MessageView::StateDirty(_) => GSTMessage::StateDirty,
-                gst::MessageView::StepDone(_) => GSTMessage::StepDone,
-                gst::MessageView::ClockProvide(_) => GSTMessage::ClockProvide,
-                gst::MessageView::ClockLost(_) => GSTMessage::ClockLost,
-                gst::MessageView::NewClock(_) => GSTMessage::NewClock,
-                gst::MessageView::StructureChange(_) => GSTMessage::StructureChange,
-                gst::MessageView::StreamStatus(_) => GSTMessage::StreamStatus,
-                gst::MessageView::Application(_) => GSTMessage::Application,
-                gst::MessageView::Element(_) => GSTMessage::Element,
-                gst::MessageView::SegmentStart(_) => GSTMessage::SegmentStart,
-                gst::MessageView::SegmentDone(_) => GSTMessage::SegmentDone,
-                gst::MessageView::DurationChanged(_) => GSTMessage::DurationChanged,
-                gst::MessageView::Latency(_) => GSTMessage::Latency,
-                gst::MessageView::AsyncStart(_) => GSTMessage::AsyncStart,
-                gst::MessageView::AsyncDone(_) => GSTMessage::AsyncDone,
-                gst::MessageView::RequestState(_) => GSTMessage::RequestState,
-                gst::MessageView::StepStart(_) => GSTMessage::StepStart,
-                gst::MessageView::Qos(_) => GSTMessage::Qos,
-                gst::MessageView::Progress(_) => GSTMessage::Progress,
-                gst::MessageView::Toc(_) => GSTMessage::Toc,
-                gst::MessageView::ResetTime(_) => GSTMessage::ResetTime,
-                gst::MessageView::StreamStart(_) => GSTMessage::StreamStart,
-                gst::MessageView::NeedContext(_) => GSTMessage::NeedContext,
-                gst::MessageView::HaveContext(_) => GSTMessage::HaveContext,
-                gst::MessageView::DeviceAdded(_) => GSTMessage::DeviceAdded,
-                gst::MessageView::DeviceRemoved(_) => GSTMessage::DeviceRemoved,
-                gst::MessageView::PropertyNotify(_) => GSTMessage::PropertyNotify,
-                gst::MessageView::StreamCollection(_) => GSTMessage::StreamCollection,
-                gst::MessageView::StreamsSelected(_) => GSTMessage::StreamsSelected,
-                gst::MessageView::Redirect(_) => GSTMessage::Redirect,
-                gst::MessageView::Other => GSTMessage::Other,
-                _ => GSTMessage::Other,
-            };
-
-            println!("message: {:?}", message);
-
-            sender1
-                .send(GSTChannel::Message(message))
-                .expect("unable to send message");
-
-            // Tell the mainloop to continue executing this callback.
-            glib::Continue(true)
-        })
-        .expect("Failed to add bus watch");
+        bus.add_watch(message_callback)
+            .expect("Failed to add bus watch");
 
         let video_player = VideoPlayer {
             bus,
@@ -336,30 +245,7 @@ impl VideoPlayer {
             restart_stream: false,
         };
 
-        Ok(subscription::unfold(
-            "subscription",
-            State::Starting(video_player, receiver),
-            |state| async move {
-                match state {
-                    State::Starting(video_player, stream) => {
-                        let item = stream.recv().unwrap();
-
-                        (
-                            Some(VideoEvent::Connected(video_player, Some(item))),
-                            State::NextFrame(stream),
-                        )
-                    }
-                    State::NextFrame(stream) => {
-                        let item = stream.recv().unwrap();
-
-                        (
-                            Some(VideoEvent::FrameUpdate(Some(item))),
-                            State::NextFrame(stream),
-                        )
-                    }
-                }
-            },
-        ))
+        Ok(video_player)
     }
 
     /// Get the size/resolution of the video as `(width, height)`.
@@ -459,7 +345,6 @@ impl VideoPlayer {
     }
 
     pub fn exit(&mut self) -> Result<(), Error> {
-        println!("end stream");
         self.source.send_event(gst::event::Eos::new());
         Ok(())
     }

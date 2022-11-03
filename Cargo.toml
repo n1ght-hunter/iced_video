@@ -10,23 +10,17 @@ anyhow = "1"
 byte-slice-cast = "1"
 derive_more = "*"
 futures-channel = "0.3"
-glib = {git = "https://github.com/gtk-rs/gtk-rs-core"}
-gst = {package = "gstreamer", git = "https://gitlab.freedesktop.org/gstreamer/gstreamer-rs.git"}
-gst-audio = {package = "gstreamer-audio", git = "https://gitlab.freedesktop.org/gstreamer/gstreamer-rs.git"}
-gst_app = {package = "gstreamer-app", git = "https://gitlab.freedesktop.org/gstreamer/gstreamer-rs.git"}
-gst_video = {package = "gstreamer-video", git = "https://gitlab.freedesktop.org/gstreamer/gstreamer-rs.git"}
+glib = {git = "https://github.com/gtk-rs/gtk-rs-core", rev = "cc7a2b1de10b1bc65f1841f259b8c118fec4221c"}
+gst = {package = "gstreamer", rev = "efb85f416e0edb44e6543e0123d5706de43c529b", git = "https://gitlab.freedesktop.org/gstreamer/gstreamer-rs.git"}
+gst_app = {package = "gstreamer-app", rev = "efb85f416e0edb44e6543e0123d5706de43c529b", git = "https://gitlab.freedesktop.org/gstreamer/gstreamer-rs.git"}
+gst_video = {package = "gstreamer-video", rev = "efb85f416e0edb44e6543e0123d5706de43c529b", git = "https://gitlab.freedesktop.org/gstreamer/gstreamer-rs.git"}
 rand = "*"
 tokio = {version = "1", features = ["time"]}
 
-[dependencies.iced_native]
-branch = "master"
-git = "https://github.com/iced-rs/iced"
 
-[dependencies.iced_lazy]
-branch = "master"
-git = "https://github.com/iced-rs/iced"
 
-[dependencies.iced]
-branch = "master"
-features = ["tokio", "debug", "image", "canvas"]
-git = "https://github.com/iced-rs/iced"
+[workspace]
+members = [
+  "wgpu_testing",
+  "examples/basic",
+]
