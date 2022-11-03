@@ -1,0 +1,21 @@
+[package]
+edition = "2021"
+name = "basic_video_player"
+version = "0.1.0"
+
+[dependencies]
+video_player = {path = "../../", package = "iced_pure_video_player"}
+
+
+[dependencies.iced_native]
+branch = "master"
+git = "https://github.com/iced-rs/iced"
+
+[dependencies.iced_lazy]
+branch = "master"
+git = "https://github.com/iced-rs/iced"
+
+[dependencies.iced]
+branch = "master"
+features = ["tokio", "debug", "image", "canvas"]
+git = "https://github.com/iced-rs/iced"
