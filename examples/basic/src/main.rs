@@ -6,7 +6,10 @@ use iced::{
     Application, Command, Event, Length, Settings, Theme,
 };
 use iced_native::{image, window};
-use video_player::{GSTMessage, VideoFormat, VideoPlayer, FlowError, FlowSuccess, MessageView, ElementExt, PadExt, Continue};
+use video_player::{
+    Continue, ElementExt, FlowError, FlowSuccess, GSTMessage, MessageView, PadExt, VideoFormat,
+    VideoPlayer,
+};
 
 fn main() {
     std::env::set_var("GST_DEBUG", "3");
@@ -65,14 +68,17 @@ impl Application for App {
                 SubMSG::Image(image) => {
                     self.frame = Some(image);
                 }
-                SubMSG::Message(message) => match message {
-                    GSTMessage::Eos => {
-                        if self.starting_exit == true {
-                            self.should_exit = true;
+                SubMSG::Message(message) => {
+                    println!("message: {:?}", message);
+                    match message {
+                        GSTMessage::Eos => {
+                            if self.starting_exit == true {
+                                self.should_exit = true;
+                            }
                         }
+                        _ => (),
                     }
-                    _ => (),
-                },
+                }
             },
             Message::PausePlay => {
                 let player = &mut self.player;
@@ -83,10 +89,10 @@ impl Application for App {
                 }
             }
             Message::EventOccurred(event) => {
-                println!("event: {:?}", event);
                 if let Event::Window(window::Event::CloseRequested) = event {
                     println!("close");
                     self.player.exit().unwrap();
+                    self.should_exit = true;
                 }
             }
         }
@@ -101,9 +107,10 @@ impl Application for App {
             iced_native::subscription::events().map(Message::EventOccurred),
             subscription::unfold("subscription", receiver, |mut stream| async move {
                 let item = stream.as_mut().unwrap().recv().unwrap();
-        
+
                 (Some(item), stream)
-            }).map(Message::Video),
+            })
+            .map(Message::Video),
         ])
     }
 
@@ -146,8 +153,8 @@ fn subscription() -> (VideoPlayer, mpsc::Receiver<SubMSG>) {
     let sender1 = sender.clone();
 
     let player = VideoPlayer::new(
-        "https://www.freedesktop.org/software/gstreamer-sdk/data/media/sintel_trailer-480p.webm",
-        false,
+        "https://video-weaver.syd03.hls.ttvnw.net/v1/playlist/CpwFUvU2cqd8q-8W6ZlI9HJ6f3GDKrsgy-w5tJK-0HtxZDjNmiqlyTI3-Aihg4ZSsXXNT1NJXBYt7MdJ2R9qPRjBrW3JaDeq4YXlC0tpfvB9Me-4X4IFXkpH_Nfef39GoCQ6olWQj_LdPPbJsD5ADGlmMbVUYqv9scB1ycwYteEi1NcZHZ-CPS7EXBdAdylYyGkrqn1NHjqD55FECGPJX_Jc84M_arW8gcBN7vM_fRxPtIO9sGvgN806xnK803WiHCuJqw4wkR_5MhZ_HR3wbZdIxwfWQlQ58IEgCj_2YKdtDWPYH4pYZIJvUvKOzS9NOK8Ry0-ecBjXlndI0B19rINDAdOMPlZt8eTQgR8Fdg1VLWIP414uHsaSTDgaVPiH9mB6X2KuZzscDlhpM3Mlhc4PB_VyK57eMeUnYqKl-CuC99SswKFPsTxCiQhYX3RJOEk6yRcRfdq_XKPSjXjFwJuIUPbUOv8NIKXRggr2AqLlDx1yRdRnkGqD4X_xU8VvQwliHD1JntN9nXfi7Z7pPzgFatrHEBCdEGH7K_H2h6Thx1J0KC4zyIOUZwfX_PS_teIqOUZ0UypWCdany56QrxbewUqYC5nMFMilZegOYIgh3mrwDEdu4QDd9RXlU9tWEjmcnDtv9l93tQv7FDJNUcaEmZDNzaGLrzlCmm_8r3J48trsdX-kFNzT-M977EfLfooK4zwwyTydAJBrrTP2aEZbbDRvmzP1_2OEeEOVUqvC3DSwKKA2nI7Ar1DNNfKV_2Ydo4GFjhz_pXAcvcPdcQsmD7yr72gV_M7fNS9WG6ze1Nv5E0fgDOAZdcGT1duL87z06-psE1LZ9tYWLSiC7GYa_Cj5SvJDX8zpHzd3FWN--7Q7keDiaUT-2bWGzmEaDPlJQZ9cmjiFVYfpRyABKgl1cy13ZXN0LTIwhwU.m3u8",
+        true,
         VideoFormat::Bgra,
         move |sink| {
             let sample = sink.pull_sample().map_err(|_| FlowError::Eos)?;

@@ -142,26 +142,6 @@ impl State {
                 label: Some("texture_bind_group_layout"),
             });
 
-        // let cartoon_bytes = include_bytes!("happy-tree-cartoon.png");
-        // let texture =
-        //     texture::Texture::from_bytes(&device, &queue, cartoon_bytes, "happy-tree-cartoon.png")
-        //         .unwrap();
-
-        // let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-        //     layout: &texture_bind_group_layout,
-        //     entries: &[
-        //         wgpu::BindGroupEntry {
-        //             binding: 0,
-        //             resource: wgpu::BindingResource::TextureView(&texture.view),
-        //         },
-        //         wgpu::BindGroupEntry {
-        //             binding: 1,
-        //             resource: wgpu::BindingResource::Sampler(&texture.sampler),
-        //         },
-        //     ],
-        //     label: Some("cartoon_bind_group"),
-        // });
-
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Shader"),
             source: wgpu::ShaderSource::Wgsl(include_str!("shader.wgsl").into()),
