@@ -1,6 +1,6 @@
 use anyhow::Error;
 use derive_more::{Display, Error};
-pub use gst::{prelude::*, Bus, Message};
+pub use gst::{prelude::*, Bus, Message, Buffer};
 pub use gst::{
     traits::{ElementExt, PadExt},
     FlowError, FlowSuccess, MessageView,

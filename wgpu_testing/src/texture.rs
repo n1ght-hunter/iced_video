@@ -1,8 +1,8 @@
 use std::num::NonZeroU32;
 
 use anyhow::*;
-use gst::Buffer;
 use image::{GenericImageView, ImageBuffer, Rgba};
+use video_player::Buffer;
 
 pub struct Texture {
     pub texture: wgpu::Texture,

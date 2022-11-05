@@ -1,15 +1,11 @@
 use gpu_controller::State;
-use gst::{
-    traits::{ElementExt, PadExt},
-    Buffer,
-};
 use winit::{
     event::*,
     event_loop::{ControlFlow, EventLoopBuilder},
     window::WindowBuilder,
 };
 
-use video_player::{VideoPlayer, VideoFormat};
+use video_player::{VideoPlayer, VideoFormat, FlowSuccess, Continue, FlowError, ElementExt, PadExt, Buffer};
 
 mod gpu_controller;
 mod texture;
@@ -37,24 +33,24 @@ async fn run() {
         true,
         VideoFormat::Rgba,
         move |sink| {
-            let sample = sink.pull_sample().map_err(|_| gst::FlowError::Eos)?;
+            let sample = sink.pull_sample().map_err(|_| FlowError::Eos)?;
 
-            let pad = sink.static_pad("sink").ok_or(gst::FlowError::Error)?;
+            let pad = sink.static_pad("sink").ok_or(FlowError::Error)?;
 
-            let caps = pad.current_caps().ok_or(gst::FlowError::Error)?;
-            let s = caps.structure(0).ok_or(gst::FlowError::Error)?;
-            let width = s.get::<i32>("width").map_err(|_| gst::FlowError::Error)?;
-            let height = s.get::<i32>("height").map_err(|_| gst::FlowError::Error)?;
+            let caps = pad.current_caps().ok_or(FlowError::Error)?;
+            let s = caps.structure(0).ok_or(FlowError::Error)?;
+            let width = s.get::<i32>("width").map_err(|_| FlowError::Error)?;
+            let height = s.get::<i32>("height").map_err(|_| FlowError::Error)?;
 
             if let Some(buffer) = sample.buffer_owned() {
                 clone_loop
                     .send_event(EventLoopMSG::Image(width, height, buffer))
-                    .map_err(|_| gst::FlowError::Error)?;
+                    .map_err(|_| FlowError::Error)?;
             }
 
-            Ok(gst::FlowSuccess::Ok)
+            Ok(FlowSuccess::Ok)
         },
-        |_,_| gst::prelude::Continue(true),
+        |_,_|Continue(true),
     )
     .unwrap();
 

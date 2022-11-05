@@ -12,10 +12,6 @@ cfg-if = "1"
 derive_more = "*"
 env_logger = "0.9"
 futures = "*"
-glib = {git = "https://github.com/gtk-rs/gtk-rs-core", rev = "cc7a2b1de10b1bc65f1841f259b8c118fec4221c"}
-gst = {package = "gstreamer", rev = "efb85f416e0edb44e6543e0123d5706de43c529b", git = "https://gitlab.freedesktop.org/gstreamer/gstreamer-rs.git"}
-gst_app = {package = "gstreamer-app", rev = "efb85f416e0edb44e6543e0123d5706de43c529b", git = "https://gitlab.freedesktop.org/gstreamer/gstreamer-rs.git"}
-gst_video = {package = "gstreamer-video", rev = "efb85f416e0edb44e6543e0123d5706de43c529b", git = "https://gitlab.freedesktop.org/gstreamer/gstreamer-rs.git"}
 log = "0.4"
 pollster = "0.2"
 video_player = {path = "../", package = "iced_pure_video_player"}
