@@ -7,20 +7,24 @@ version = "0.1.0"
 
 [dependencies]
 anyhow = "1"
-byte-slice-cast = "1"
 derive_more = "*"
-futures-channel = "0.3"
-glib = {git = "https://github.com/gtk-rs/gtk-rs-core", rev = "cc7a2b1de10b1bc65f1841f259b8c118fec4221c"}
-gst = {package = "gstreamer", rev = "efb85f416e0edb44e6543e0123d5706de43c529b", git = "https://gitlab.freedesktop.org/gstreamer/gstreamer-rs.git"}
-gst_app = {package = "gstreamer-app", rev = "efb85f416e0edb44e6543e0123d5706de43c529b", git = "https://gitlab.freedesktop.org/gstreamer/gstreamer-rs.git"}
-gst_video = {package = "gstreamer-video", rev = "efb85f416e0edb44e6543e0123d5706de43c529b", git = "https://gitlab.freedesktop.org/gstreamer/gstreamer-rs.git"}
-rand = "*"
-tokio = {version = "1", features = ["time"]}
+glib = "0.16.3"
+gst = {package = "gstreamer", version = "0.19.3"}
+gst_app = {package = "gstreamer-app", version = "0.19.2"}
+gst_video = {package = "gstreamer-video", version = "0.19.3"}
 
-
+[dependencies.iced]
+features = ["tokio", "debug", "image", "svg"]
+version = "0.6"
+[dependencies.iced_futures]
+version = "0.5"
+[dependencies.iced_native]
+version = "0.7"
 
 [workspace]
 members = [
   "wgpu_testing",
   "examples/basic",
+  "examples/gifs",
+  "examples/multiple_videos",
 ]

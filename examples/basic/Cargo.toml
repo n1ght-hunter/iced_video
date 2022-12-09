@@ -6,16 +6,6 @@ version = "0.1.0"
 [dependencies]
 video_player = {path = "../../", package = "iced_pure_video_player"}
 
-
-[dependencies.iced_native]
-branch = "master"
-git = "https://github.com/iced-rs/iced"
-
-[dependencies.iced_lazy]
-branch = "master"
-git = "https://github.com/iced-rs/iced"
-
 [dependencies.iced]
-branch = "master"
-features = ["tokio", "debug", "image", "canvas"]
-git = "https://github.com/iced-rs/iced"
+features = ["tokio", "debug", "image", "svg", "canvas"]
+version = "0.6"

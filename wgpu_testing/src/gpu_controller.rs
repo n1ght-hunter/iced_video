@@ -1,6 +1,6 @@
 use std::iter;
 
-use video_player::Buffer;
+use video_player::player::Buffer;
 use wgpu::util::DeviceExt;
 use winit::{
     event::{ElementState, KeyboardInput, VirtualKeyCode, WindowEvent},

@@ -1,11 +1,15 @@
+// currently broken
+
+
+
+
 use gpu_controller::State;
+use video_player::player::{FlowError, FlowSuccess, Continue, VideoFormat, VideoPlayer, ElementExt, PadExt, Buffer};
 use winit::{
     event::*,
     event_loop::{ControlFlow, EventLoopBuilder},
     window::WindowBuilder,
 };
-
-use video_player::{VideoPlayer, VideoFormat, FlowSuccess, Continue, FlowError, ElementExt, PadExt, Buffer};
 
 mod gpu_controller;
 mod texture;
@@ -29,8 +33,9 @@ async fn run() {
     let clone_loop = event_loop.create_proxy();
 
     let mut player = VideoPlayer::new(
-        "https://video-weaver.syd03.hls.ttvnw.net/v1/playlist/CpwFUvU2cqd8q-8W6ZlI9HJ6f3GDKrsgy-w5tJK-0HtxZDjNmiqlyTI3-Aihg4ZSsXXNT1NJXBYt7MdJ2R9qPRjBrW3JaDeq4YXlC0tpfvB9Me-4X4IFXkpH_Nfef39GoCQ6olWQj_LdPPbJsD5ADGlmMbVUYqv9scB1ycwYteEi1NcZHZ-CPS7EXBdAdylYyGkrqn1NHjqD55FECGPJX_Jc84M_arW8gcBN7vM_fRxPtIO9sGvgN806xnK803WiHCuJqw4wkR_5MhZ_HR3wbZdIxwfWQlQ58IEgCj_2YKdtDWPYH4pYZIJvUvKOzS9NOK8Ry0-ecBjXlndI0B19rINDAdOMPlZt8eTQgR8Fdg1VLWIP414uHsaSTDgaVPiH9mB6X2KuZzscDlhpM3Mlhc4PB_VyK57eMeUnYqKl-CuC99SswKFPsTxCiQhYX3RJOEk6yRcRfdq_XKPSjXjFwJuIUPbUOv8NIKXRggr2AqLlDx1yRdRnkGqD4X_xU8VvQwliHD1JntN9nXfi7Z7pPzgFatrHEBCdEGH7K_H2h6Thx1J0KC4zyIOUZwfX_PS_teIqOUZ0UypWCdany56QrxbewUqYC5nMFMilZegOYIgh3mrwDEdu4QDd9RXlU9tWEjmcnDtv9l93tQv7FDJNUcaEmZDNzaGLrzlCmm_8r3J48trsdX-kFNzT-M977EfLfooK4zwwyTydAJBrrTP2aEZbbDRvmzP1_2OEeEOVUqvC3DSwKKA2nI7Ar1DNNfKV_2Ydo4GFjhz_pXAcvcPdcQsmD7yr72gV_M7fNS9WG6ze1Nv5E0fgDOAZdcGT1duL87z06-psE1LZ9tYWLSiC7GYa_Cj5SvJDX8zpHzd3FWN--7Q7keDiaUT-2bWGzmEaDPlJQZ9cmjiFVYfpRyABKgl1cy13ZXN0LTIwhwU.m3u8",
-        true,
+        "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+        false,
+        false,
         VideoFormat::Rgba,
         move |sink| {
             let sample = sink.pull_sample().map_err(|_| FlowError::Eos)?;

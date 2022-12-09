@@ -1,8 +1,8 @@
 use std::num::NonZeroU32;
 
 use anyhow::*;
-use image::{GenericImageView, ImageBuffer, Rgba};
-use video_player::Buffer;
+use image::{GenericImageView};
+use video_player::player::Buffer;
 
 pub struct Texture {
     pub texture: wgpu::Texture,
@@ -40,8 +40,13 @@ impl Texture {
         dimensions: (u32, u32),
         label: Option<&str>,
     ) -> Result<Self> {
-        
-        Self::from_pixels(device, queue, &pixels.map_readable().unwrap(), dimensions, label)
+        Self::from_pixels(
+            device,
+            queue,
+            &pixels.map_readable().unwrap(),
+            dimensions,
+            label,
+        )
     }
 
     pub fn from_pixels(
