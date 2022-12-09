@@ -12,7 +12,8 @@
 ### Known Issues:
 - cant close iced application
 - veiwer not resizing to match image
-
+- slider goes to 0 after releasing when using seek
+- styles bad
 ### Road Map
 
 - build custom widget to display opengl textures if possible (faster then getting and displaying RGB)
