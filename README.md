@@ -1,5 +1,7 @@
 # Iced Video Player
 
+![Basic Example Gif](assets\basic_example.gif)
+
 **Gstreamer install instruction [here](https://gitlab.freedesktop.org/gstreamer/gstreamer-rs#installation)**
 
 ### Features:
@@ -7,11 +9,14 @@
 - can play URLS and files
 - automatic auto source selecting
 
+### Known Issues:
+- cant close iced application
+- veiwer not resizing to match image
+
 ### Road Map
 
 - build custom widget to display opengl textures if possible (faster then getting and displaying RGB)
-- optional overlay with controls
-- simplify usage 
+- optional overlay with controls(WIP)
 - update widget without cause entire view to be updated
 - option to popout player
 
