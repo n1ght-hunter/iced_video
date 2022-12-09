@@ -1,6 +1,6 @@
 # Iced Video Player
 
-![Basic Example Gif](assets\basic_example.gif)
+![Basic Example Gif](https://github.com/Night-Hunter-NF/iced_pure_video_player/blob/master/assets/basic_example.gif)
 
 **Gstreamer install instruction [here](https://gitlab.freedesktop.org/gstreamer/gstreamer-rs#installation)**
 
