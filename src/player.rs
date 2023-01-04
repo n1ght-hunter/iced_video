@@ -1,4 +1,3 @@
-
 use anyhow::Error;
 use derive_more::{Display, Error};
 pub use gst::{prelude::*, Buffer, Bus, Message};
@@ -8,6 +7,7 @@ pub use gst::{
 };
 use gst_app::AppSink;
 pub use gst_video::VideoFormat;
+use log::{debug, info};
 
 /// Position in the media.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -101,9 +101,12 @@ impl VideoPlayer {
         C: FnMut(&AppSink) -> Result<gst::FlowSuccess, gst::FlowError> + Send + 'static,
         F: FnMut(&Bus, &Message) -> gst::prelude::Continue + Send + 'static,
     {
+        info!("Initializing Player");
+        debug!("Initialize GStreamer");
         // Initialize GStreamer
         gst::init()?;
 
+        debug!("Initialize playbin");
         // playbin handle most sources and offers easy to impl controls
         let source = gst::ElementFactory::make("playbin")
             .property("uri", uri)
@@ -135,6 +138,7 @@ impl VideoPlayer {
                 .build(),
         ));
 
+        debug!("Create the sink bin and linking");
         // Create the sink bin, add the elements and link them
         let bin = gst::Bin::new(Some("video-bin"));
         bin.add_many(&[&videoconvert, &scale, app_sink.as_ref()])?;
@@ -152,6 +156,7 @@ impl VideoPlayer {
 
         source.set_state(gst::State::Playing)?;
 
+        debug!("Waiting for decoder to get source capabilities");
         // wait for up to 5 seconds until the decoder gets the source capabilities
         source.state(gst::ClockTime::from_seconds(5)).0?;
 
@@ -165,8 +170,9 @@ impl VideoPlayer {
             .get::<gst::Fraction>("framerate")
             .map_err(|_| Missing("framerate"))?;
 
-        // // if live getting the duration doesn't make sense
+        // if live getting the duration doesn't make sense
         let duration = if !live {
+            debug!("getting duration");
             std::time::Duration::from_nanos(
                 source
                     .query_duration::<gst::ClockTime>()
@@ -174,11 +180,12 @@ impl VideoPlayer {
                     .nseconds(),
             )
         } else {
+            debug!("live no duration");
             std::time::Duration::from_secs(0)
         };
 
-        // // callback for video sink
-        // // creates then sends video handle to subscription
+        // callback for video sink
+        // creates then sends video handle to subscription
         app_sink.set_callbacks(
             gst_app::AppSinkCallbacks::builder()
                 .new_sample(sample_callback)
@@ -193,6 +200,7 @@ impl VideoPlayer {
             .expect("Failed to add bus watch");
 
         if !auto_start {
+            debug!("auto start false setting state to paused");
             source.set_state(gst::State::Paused)?;
         }
 
@@ -210,7 +218,7 @@ impl VideoPlayer {
             is_eos: false,
             restart_stream: false,
         };
-
+        info!("player initialized");
         Ok(video_player)
     }
 
@@ -236,6 +244,7 @@ impl VideoPlayer {
     ///
     /// This uses a linear scale, for example `0.5` is perceived as half as loud.
     pub fn set_volume(&mut self, volume: f64) {
+        debug!("volume set to: {}", volume);
         self.source.set_property("volume", &volume);
     }
 
@@ -249,6 +258,7 @@ impl VideoPlayer {
 
     /// Set if the audio is muted or not, without changing the volume.
     pub fn set_muted(&mut self, muted: bool) {
+        debug!("muted set to: {}", muted);
         self.muted = muted;
         self.source.set_property("mute", &muted);
     }
@@ -274,11 +284,13 @@ impl VideoPlayer {
     /// Set if the media will loop or not.
     #[inline(always)]
     pub fn set_looping(&mut self, looping: bool) {
+        debug!("looping set to: {}", looping);
         self.looping = looping;
     }
 
     /// Set if the media is paused or not.
-    pub fn set_paused(&mut self, paused: bool) {
+    pub fn set_paused_state(&mut self, paused: bool) {
+        debug!("set paused state to: {}", paused);
         self.source
             .set_state(if paused {
                 gst::State::Paused
@@ -303,7 +315,9 @@ impl VideoPlayer {
     /// Jumps to a specific position in the media.
     /// The seeking is not perfectly accurate.
     pub fn seek(&mut self, position: u64) -> Result<(), Error> {
-        self.source.seek_simple(gst::SeekFlags::FLUSH, position * gst::ClockTime::SECOND)?;
+        debug!("seeking to: {}", position);
+        self.source
+            .seek_simple(gst::SeekFlags::FLUSH, position * gst::ClockTime::SECOND)?;
         Ok(())
     }
 
@@ -329,6 +343,7 @@ impl VideoPlayer {
     }
 
     pub fn exit(&mut self) -> Result<(), Error> {
+        debug!("exiting");
         self.source.send_event(gst::event::Eos::new());
         Ok(())
     }
@@ -336,7 +351,7 @@ impl VideoPlayer {
     /// Restarts a stream; seeks to the first frame and unpauses, sets the `eos` flag to false.
     pub fn restart_stream(&mut self) -> Result<(), Error> {
         self.is_eos = false;
-        self.set_paused(false);
+        self.set_paused_state(false);
         // self.seek(0)?;
         Ok(())
     }
