@@ -1,10 +1,9 @@
 // currently broken
 
-
-
-
 use gpu_controller::State;
-use video_player::player::{FlowError, FlowSuccess, Continue, VideoFormat, VideoPlayer, ElementExt, PadExt, Buffer};
+use video_player::player::{
+    Buffer, Continue, ElementExt, FlowError, FlowSuccess, PadExt, VideoFormat, VideoPlayer,
+};
 use winit::{
     event::*,
     event_loop::{ControlFlow, EventLoopBuilder},
@@ -55,7 +54,7 @@ async fn run() {
 
             Ok(FlowSuccess::Ok)
         },
-        |_,_|Continue(true),
+        |_, _| Continue(true),
     )
     .unwrap();
 
@@ -91,7 +90,7 @@ async fn run() {
                             modifiers: _,
                         } => match button {
                             MouseButton::Left => match state {
-                                ElementState::Pressed => player.set_paused(!player.paused()),
+                                ElementState::Pressed => player.set_paused_state(!player.paused()),
                                 ElementState::Released => {}
                             },
                             _ => {}

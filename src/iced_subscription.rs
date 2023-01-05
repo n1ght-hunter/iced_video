@@ -22,7 +22,7 @@ pub enum SubMSG {
 pub struct VideoSettings {
     /// start player in play state
     pub auto_start: bool,
-    /// if live duraction won't work and trying to seek will cause a panic
+    /// if live duration won't work and trying to seek will cause a panic
     pub live: bool,
     /// if no id is present the uri will be used
     pub id: Option<String>,

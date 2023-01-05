@@ -1,7 +1,7 @@
 use std::num::NonZeroU32;
 
 use anyhow::*;
-use image::{GenericImageView};
+use image::GenericImageView;
 use video_player::player::Buffer;
 
 pub struct Texture {

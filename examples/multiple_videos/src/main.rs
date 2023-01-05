@@ -94,8 +94,8 @@ impl Application for App {
                 if let Some((player, _self_image)) = self.players.get_mut(&uri) {
                     if let Some(player) = player {
                         match event {
-                            PlayerEvent::Play => player.set_paused(false),
-                            PlayerEvent::Pause => player.set_paused(true),
+                            PlayerEvent::Play => player.set_paused_state(false),
+                            PlayerEvent::Pause => player.set_paused_state(true),
                             PlayerEvent::ToggleMute => {
                                 if player.muted() {
                                     player.set_muted(false)

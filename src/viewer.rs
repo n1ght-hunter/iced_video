@@ -6,11 +6,7 @@ use iced::{
 
 use iced_futures::MaybeSend;
 
-use crate::{
-    overlay::Overlay,
-    player::VideoPlayer,
-    svgs,
-};
+use crate::{overlay::Overlay, player::VideoPlayer, svgs};
 
 #[derive(Clone, Debug)]
 pub enum PlayerEvent {
