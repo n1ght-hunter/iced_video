@@ -23,7 +23,7 @@ pub fn image(state: &State) -> Element {
                     Message::PlayerEvent(PlayerEvent::Pause)
                 }
             } else {
-                Message::None
+                Message::None(())
             })
             .style(theme::Button::Transparent),
     )

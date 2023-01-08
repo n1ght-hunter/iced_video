@@ -5,6 +5,7 @@ use crate::update::Message;
 
 pub struct State {
     pub player: Option<VideoPlayer>,
+    pub uri: Option<String>,
     pub frame: Option<image::Handle>,
     pub seek: Option<u64>,
     pub title: String,
@@ -17,6 +18,7 @@ impl State {
                 player: None,
                 frame: None,
                 seek: None,
+                uri: None,
                 title: String::from("Video Player"),
             },
             Command::none(),
