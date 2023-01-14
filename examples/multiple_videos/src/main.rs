@@ -6,9 +6,9 @@ use iced::{
     Application, Command, Length, Subscription,
 };
 use video_player::{
-    iced_subscription::{video_subscription, SubMSG, VideoSettings},
-    player::VideoPlayer,
-    viewer::PlayerEvent,
+    iced_subscription::{video_subscription, SubMSG},
+    player::{VideoPlayer, VideoSettings},
+    viewer::ControlEvent,
 };
 
 fn main() {
@@ -19,7 +19,7 @@ fn main() {
 #[derive(Clone, Debug)]
 enum Message {
     Video(SubMSG),
-    PlayerEvent(String, PlayerEvent),
+    ControlEvent(String, ControlEvent),
 }
 
 struct App {
@@ -90,24 +90,24 @@ impl Application for App {
                     }
                 }
             },
-            Message::PlayerEvent(uri, event) => {
+            Message::ControlEvent(uri, event) => {
                 if let Some((player, _self_image)) = self.players.get_mut(&uri) {
                     if let Some(player) = player {
                         match event {
-                            PlayerEvent::Play => player.set_paused_state(false),
-                            PlayerEvent::Pause => player.set_paused_state(true),
-                            PlayerEvent::ToggleMute => {
+                            ControlEvent::Play => player.set_paused_state(false),
+                            ControlEvent::Pause => player.set_paused_state(true),
+                            ControlEvent::ToggleMute => {
                                 if player.muted() {
                                     player.set_muted(false)
                                 } else {
                                     player.set_muted(true)
                                 }
                             }
-                            PlayerEvent::Volume(volume) => player.set_volume(volume),
-                            PlayerEvent::Seek(p) => {
+                            ControlEvent::Volume(volume) => player.set_volume(volume),
+                            ControlEvent::Seek(p) => {
                                 self.seek = Some(p as u64);
                             }
-                            PlayerEvent::Released => {
+                            ControlEvent::Released => {
                                 player.seek(self.seek.unwrap()).unwrap_or_else(|_| ());
                                 self.seek = None;
                             }
@@ -130,12 +130,12 @@ impl Application for App {
                             .height(Length::Units(480))
                             .width(Length::Units(480)),
                     )
-                    .on_press(Message::PlayerEvent(
+                    .on_press(Message::ControlEvent(
                         uri.clone(),
                         if player.is_some() && player.as_ref().unwrap().paused() {
-                            PlayerEvent::Play
+                            ControlEvent::Play
                         } else {
-                            PlayerEvent::Pause
+                            ControlEvent::Pause
                         },
                     ))
                     .into()

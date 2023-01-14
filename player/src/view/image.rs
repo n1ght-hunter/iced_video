@@ -1,5 +1,5 @@
 use iced::{widget, Background, Color, Length};
-use video_player::viewer::PlayerEvent;
+use video_player::viewer::ControlEvent;
 
 use crate::{state::State, theme, update::Message, Element};
 
@@ -18,9 +18,9 @@ pub fn image(state: &State) -> Element {
         widget::button(image)
             .on_press(if let Some(player) = &state.player {
                 if player.paused() {
-                    Message::PlayerEvent(PlayerEvent::Play)
+                    Message::ControlEvent(ControlEvent::Play)
                 } else {
-                    Message::PlayerEvent(PlayerEvent::Pause)
+                    Message::ControlEvent(ControlEvent::Pause)
                 }
             } else {
                 Message::None(())

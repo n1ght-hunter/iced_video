@@ -1,5 +1,6 @@
 use std::{borrow::Cow, sync::mpsc};
 
+use core::hash::Hash;
 use gst::{
     prelude::Continue,
     traits::{ElementExt, PadExt},
@@ -8,7 +9,7 @@ use gst::{
 use gst_video::VideoFormat;
 use iced::{subscription, widget::image};
 
-use crate::player::VideoPlayer;
+use crate::player::{VideoPlayer, VideoSettings};
 
 #[derive(Clone, Debug)]
 pub enum SubMSG {
@@ -17,57 +18,26 @@ pub enum SubMSG {
     Message(String, GSTMessage),
 }
 
-/// setting when creating a player
-#[derive(Clone, Debug)]
-pub struct VideoSettings {
-    /// start player in play state
-    pub auto_start: bool,
-    /// if live duration won't work and trying to seek will cause a panic
-    pub live: bool,
-    /// if no id is present the uri will be used
-    pub id: Option<String>,
-}
-
-impl Default for VideoSettings {
-    fn default() -> Self {
-        Self {
-            auto_start: false,
-            live: false,
-            id: None,
-        }
-    }
-}
-
 #[derive(Debug)]
 enum PlayerSubscription {
     Starting(String, VideoSettings),
     Next(mpsc::Receiver<SubMSG>),
 }
 
-pub fn video_subscription(uri: String, settings: VideoSettings) -> iced::Subscription<SubMSG> {
+pub fn video_subscription(id: impl Into<String>, settings: VideoSettings) -> iced::Subscription<SubMSG> {
+    let id: String = id.into();
     subscription::unfold(
-        if let Some(id) = &settings.id {
-            id.clone()
-        } else {
-            uri.clone()
-        },
-        PlayerSubscription::Starting(uri, settings),
+        id.clone(),
+        PlayerSubscription::Starting(id, settings),
         |state| async move {
             match state {
-                PlayerSubscription::Starting(uri, settings) => {
+                PlayerSubscription::Starting(id, settings) => {
                     let (sender, receiver) = mpsc::channel::<SubMSG>();
                     let sender1 = sender.clone();
-                    let id = if let Some(id) = settings.id {
-                        id
-                    } else {
-                        uri.clone()
-                    };
                     let id1 = id.clone();
                     let id2 = id.clone();
                     let player = VideoPlayer::new(
-                        &uri.clone(),
-                        settings.live,
-                        settings.auto_start,
+                        settings,
                         VideoFormat::Rgba,
                         move |sink| {
                             let sample = sink.pull_sample().map_err(|_| FlowError::Eos)?;
@@ -83,7 +53,7 @@ pub fn video_subscription(uri: String, settings: VideoSettings) -> iced::Subscri
 
                             sender
                                 .send(SubMSG::Image(
-                                    uri.clone(),
+                                    id1.clone(),
                                     image::Handle::from_pixels(
                                         width as u32,
                                         height as u32,
@@ -140,7 +110,7 @@ pub fn video_subscription(uri: String, settings: VideoSettings) -> iced::Subscri
                             };
 
                             sender1
-                                .send(SubMSG::Message(id1.clone(), message))
+                                .send(SubMSG::Message(id2.clone(), message))
                                 .expect("unable to send message");
 
                             // Tell the mainloop to continue executing this callback.
@@ -149,7 +119,7 @@ pub fn video_subscription(uri: String, settings: VideoSettings) -> iced::Subscri
                     )
                     .unwrap();
                     (
-                        Some(SubMSG::Player(id2, player)),
+                        Some(SubMSG::Player(id, player)),
                         PlayerSubscription::Next(receiver),
                     )
                 }

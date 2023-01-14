@@ -7,12 +7,13 @@ use super::Message;
 
 #[derive(Clone, Debug)]
 pub enum MenuEvent {
-    OpenFile,
+    OpenFileDialog,
+    OpenFile(Option<String>),
 }
 
 pub fn menu_event(state: &mut State, event: MenuEvent) -> iced::Command<Message> {
     match event {
-        MenuEvent::OpenFile => {
+        MenuEvent::OpenFileDialog => {
             return Command::perform(
                 async {
                     let file = AsyncFileDialog::new()
@@ -33,13 +34,23 @@ pub fn menu_event(state: &mut State, event: MenuEvent) -> iced::Command<Message>
                         .pick_file()
                         .await;
                     if let Some(file) = file {
-                        Some(format!("file:///{}",file.path().to_str().unwrap().to_string()))
+                        Some(format!(
+                            "file:///{}",
+                            file.path().to_str().unwrap().to_string()
+                        ))
                     } else {
                         None
                     }
                 },
-                Message::SetUri,
+                |f| Message::MenuEvent(MenuEvent::OpenFile(f)),
             )
+        }
+        MenuEvent::OpenFile(file) => {
+            if let Some(uri) = file  {
+                if let Some(player) = &mut state.player {
+                    player.set_source(uri).unwrap();
+                }
+            }
         }
     }
     Command::none()

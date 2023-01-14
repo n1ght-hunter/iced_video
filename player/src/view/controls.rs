@@ -1,5 +1,5 @@
 use iced::{color, widget, Alignment, Background, Color, Length, Padding};
-use video_player::{svgs, viewer::PlayerEvent};
+use video_player::{svgs, viewer::ControlEvent};
 
 use crate::{state::State, theme, update::Message, Element};
 
@@ -23,7 +23,7 @@ pub fn controls(state: &State) -> Element {
                     .height(Length::Units(28))
                     .width(Length::Units(28)),
             )
-            .on_press(Message::PlayerEvent(PlayerEvent::Play))
+            .on_press(Message::ControlEvent(ControlEvent::Play))
         } else {
             widget::Button::new(
                 widget::svg(svgs::pause_svg())
@@ -31,7 +31,7 @@ pub fn controls(state: &State) -> Element {
                     .width(Length::Units(28)),
             )
             // .style(theme::Button::Transparent)
-            .on_press(Message::PlayerEvent(PlayerEvent::Pause))
+            .on_press(Message::ControlEvent(ControlEvent::Pause))
         }
     } else {
         widget::Button::new(
@@ -39,7 +39,7 @@ pub fn controls(state: &State) -> Element {
                 .height(Length::Units(28))
                 .width(Length::Units(28)),
         )
-        .on_press(Message::PlayerEvent(PlayerEvent::Play))
+        .on_press(Message::ControlEvent(ControlEvent::Play))
     };
 
     let duration_text = widget::container(widget::text(format!(
@@ -71,14 +71,14 @@ pub fn controls(state: &State) -> Element {
                     .height(Length::Units(28))
                     .width(Length::Units(28)),
             )
-            .on_press(Message::PlayerEvent(PlayerEvent::ToggleMute))
+            .on_press(Message::ControlEvent(ControlEvent::ToggleMute))
         } else {
             widget::Button::new(
                 widget::svg(svgs::muted_svg())
                     .height(Length::Units(28))
                     .width(Length::Units(28)),
             )
-            .on_press(Message::PlayerEvent(PlayerEvent::ToggleMute))
+            .on_press(Message::ControlEvent(ControlEvent::ToggleMute))
         }
     } else {
         widget::Button::new(
@@ -86,12 +86,12 @@ pub fn controls(state: &State) -> Element {
                 .height(Length::Units(28))
                 .width(Length::Units(28)),
         )
-        .on_press(Message::PlayerEvent(PlayerEvent::ToggleMute))
+        .on_press(Message::ControlEvent(ControlEvent::ToggleMute))
     };
 
     let volume_slider = widget::container(
         widget::Slider::new(0.0..=1.0, volume, |v| {
-            Message::PlayerEvent(PlayerEvent::Volume(v))
+            Message::ControlEvent(ControlEvent::Volume(v))
         })
         .style(theme::Slider::Volume)
         .step(0.05)
@@ -102,9 +102,9 @@ pub fn controls(state: &State) -> Element {
     let seek_slider = widget::Slider::new(
         0.0..=duration.to_owned() as f64,
         position.to_owned() as f64,
-        |v| Message::PlayerEvent(PlayerEvent::Seek(v)),
+        |v| Message::ControlEvent(ControlEvent::Seek(v)),
     )
-    .on_release(Message::PlayerEvent(PlayerEvent::Released))
+    .on_release(Message::ControlEvent(ControlEvent::Released))
     .style(theme::Slider::Seek)
     .step(1.0);
 
