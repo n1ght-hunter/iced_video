@@ -8,6 +8,7 @@ version = "0.1.0"
 [dependencies]
 rfd = {git = "https://github.com/PolyMeilex/rfd", rev = "f565c622e343d0f21ea7d4134b55a4527955b9db"}
 video_player = {path = "../", package = "iced_pure_video_player"}
+env_logger = "0.10.0"
 
 [dependencies.iced]
 features = ["tokio", "debug", "image", "svg", "canvas"]

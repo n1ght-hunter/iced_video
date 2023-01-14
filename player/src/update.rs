@@ -2,21 +2,21 @@ pub mod menu_event;
 pub mod player_event;
 
 use iced::Command;
-use video_player::{iced_subscription::SubMSG, viewer::PlayerEvent};
+use video_player::{iced_subscription::SubMSG, viewer::ControlEvent};
 
 use crate::State;
 
 use self::{
     menu_event::{menu_event, MenuEvent},
-    player_event::player_event,
+    player_event::control_event,
 };
 
 #[derive(Clone, Debug)]
 pub enum Message {
     Video(SubMSG),
-    PlayerEvent(PlayerEvent),
+    ControlEvent(ControlEvent),
     MenuEvent(MenuEvent),
-    SetUri(Option<String>),
+    SetUri(String),
     None(()),
 }
 
@@ -34,12 +34,13 @@ pub fn update(state: &mut State, message: Message) -> iced::Command<Message> {
             }
             SubMSG::Player(_id, player) => state.player = Some(player),
         },
-        Message::PlayerEvent(event) => return player_event(state, event),
+        Message::ControlEvent(event) => return control_event(state, event),
         Message::None(_) => (),
         Message::MenuEvent(event) => return menu_event(state, event),
         Message::SetUri(uri) => {
-            println!("{:?}", uri);
-            state.uri = uri;
+            if let Some(player) = &state.player {
+                player.set_uri(uri);
+            }
         }
     }
     Command::none()

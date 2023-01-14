@@ -58,12 +58,32 @@ struct ErrorMessage {
     source: glib::Error,
 }
 
+/// setting when creating a player
+#[derive(Clone, Debug)]
+pub struct VideoSettings {
+    /// start player in play state
+    pub auto_start: bool,
+    /// if live duration won't work and trying to seek will cause a panic
+    pub live: bool,
+    /// vdieo uri
+    pub uri: Option<String>,
+}
+
+impl Default for VideoSettings {
+    fn default() -> Self {
+        Self {
+            auto_start: false,
+            live: false,
+            uri: None,
+        }
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct VideoPlayer {
     bus: gst::Bus,
     source: gst::Element,
 
-    uri: String,
     width: i32,
     height: i32,
     framerate: f64,
@@ -90,9 +110,7 @@ impl VideoPlayer {
     /// Set `live` if the streaming source is indefinite (e.g. a live stream).
     /// Note that this will cause the duration to be zero.
     pub fn new<C, F>(
-        uri: &str,
-        live: bool,
-        auto_start: bool,
+        settings: VideoSettings,
         format: VideoFormat,
         sample_callback: C,
         message_callback: F,
@@ -108,10 +126,16 @@ impl VideoPlayer {
 
         debug!("Initialize playbin");
         // playbin handle most sources and offers easy to impl controls
-        let source = gst::ElementFactory::make("playbin")
-            .property("uri", uri)
-            .build()
-            .map_err(|_| MissingElement("playbin"))?;
+        let source = if let Some(uri) = settings.uri {
+            gst::ElementFactory::make("playbin")
+                .property("uri", uri)
+                .build()
+                .map_err(|_| MissingElement("playbin"))?
+        } else {
+            gst::ElementFactory::make("playbin")
+                .build()
+                .map_err(|_| MissingElement("playbin"))?
+        };
 
         // Create elements that go inside the sink bin
         let videoconvert = gst::ElementFactory::make("videoconvert")
@@ -127,7 +151,7 @@ impl VideoPlayer {
             .build()
             .map_err(|_| MissingElement("appsink"))?
             .dynamic_cast::<gst_app::AppSink>()
-            .unwrap();
+            .expect("unable to cast appsink");
 
         app_sink.set_property("emit-signals", true);
 
@@ -147,19 +171,18 @@ impl VideoPlayer {
         // create ghost pad
         let pad = videoconvert
             .static_pad("sink")
-            .expect("Failed to get a static pad from equalizer.");
-        let ghost_pad = gst::GhostPad::with_target(Some("sink"), &pad).unwrap();
+            .ok_or(MissingElement("no ghost pad"))?;
+        let ghost_pad = gst::GhostPad::with_target(Some("sink"), &pad)?;
         ghost_pad.set_active(true)?;
         bin.add_pad(&ghost_pad)?;
 
         source.set_property("video-sink", &bin);
 
-        source.set_state(gst::State::Playing)?;
+        // source.set_state(gst::State::Playing)?;
 
-        debug!("Waiting for decoder to get source capabilities");
+        // debug!("Waiting for decoder to get source capabilities");
         // wait for up to 5 seconds until the decoder gets the source capabilities
-        source.state(gst::ClockTime::from_seconds(5)).0?;
-
+        // source.state(gst::ClockTime::from_seconds(5)).0?;
         let caps = ghost_pad.current_caps().ok_or(Missing("ghost_pad"))?;
 
         let s = caps.structure(0).ok_or(Missing("caps"))?;
@@ -171,18 +194,19 @@ impl VideoPlayer {
             .map_err(|_| Missing("framerate"))?;
 
         // if live getting the duration doesn't make sense
-        let duration = if !live {
-            debug!("getting duration");
-            std::time::Duration::from_nanos(
-                source
-                    .query_duration::<gst::ClockTime>()
-                    .ok_or(Missing("Duration"))?
-                    .nseconds(),
-            )
-        } else {
-            debug!("live no duration");
-            std::time::Duration::from_secs(0)
-        };
+        // let duration = if !settings.live {
+        //     debug!("getting duration");
+        //     std::time::Duration::from_nanos(
+        //         source
+        //             .query_duration::<gst::ClockTime>()
+        //             .ok_or(Missing("Duration"))?
+        //             .nseconds(),
+        //     )
+        // } else {
+        //     debug!("live no duration");
+        //     std::time::Duration::from_secs(0)
+        // };
+        let duration = std::time::Duration::from_secs(0);
 
         // callback for video sink
         // creates then sends video handle to subscription
@@ -199,7 +223,7 @@ impl VideoPlayer {
         bus.add_watch(message_callback)
             .expect("Failed to add bus watch");
 
-        if !auto_start {
+        if !settings.auto_start {
             debug!("auto start false setting state to paused");
             source.set_state(gst::State::Paused)?;
         }
@@ -209,10 +233,9 @@ impl VideoPlayer {
             source,
             width,
             height,
-            uri: uri.into(),
             framerate: framerate.numer() as f64 / framerate.denom() as f64,
             duration,
-            paused: if auto_start { false } else { true },
+            paused: if settings.auto_start { false } else { true },
             muted: false,
             looping: false,
             is_eos: false,
@@ -236,7 +259,11 @@ impl VideoPlayer {
 
     #[inline(always)]
     pub fn uri(&self) -> String {
-        self.uri.clone()
+        self.source.property("uri")
+    }
+
+    pub fn set_uri(&self, uri: impl Into<String>) {
+        self.source.set_property("uri", uri.into());
     }
 
     /// Set the volume multiplier of the audio.
