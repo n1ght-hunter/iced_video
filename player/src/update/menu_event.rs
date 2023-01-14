@@ -45,7 +45,13 @@ pub fn menu_event(state: &mut State, event: MenuEvent) -> iced::Command<Message>
                 |f| Message::MenuEvent(MenuEvent::OpenFile(f)),
             )
         }
-        MenuEvent::OpenFile(file) => {}
+        MenuEvent::OpenFile(file) => {
+            if let Some(uri) = file  {
+                if let Some(player) = &mut state.player {
+                    player.set_source(uri).unwrap();
+                }
+            }
+        }
     }
     Command::none()
 }

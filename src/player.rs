@@ -80,19 +80,27 @@ impl Default for VideoSettings {
 }
 
 #[derive(Clone, Debug)]
-pub struct VideoPlayer {
-    bus: gst::Bus,
-    source: gst::Element,
-
+pub struct VideoDetails {
     width: i32,
     height: i32,
     framerate: f64,
+}
+
+#[derive(Clone, Debug)]
+pub struct VideoPlayer {
+    bus: gst::Bus,
+    source: gst::Element,
+    bin: gst::Bin,
+    videoconvert: gst::Element,
+
+    video_details: Option<VideoDetails>,
     duration: std::time::Duration,
     paused: bool,
     muted: bool,
     looping: bool,
     is_eos: bool,
     restart_stream: bool,
+    auto_start: bool,
 }
 
 impl Drop for VideoPlayer {
@@ -168,46 +176,6 @@ impl VideoPlayer {
         bin.add_many(&[&videoconvert, &scale, app_sink.as_ref()])?;
         gst::Element::link_many(&[&videoconvert, &scale, app_sink.as_ref()])?;
 
-        // create ghost pad
-        let pad = videoconvert
-            .static_pad("sink")
-            .ok_or(MissingElement("no ghost pad"))?;
-        let ghost_pad = gst::GhostPad::with_target(Some("sink"), &pad)?;
-        ghost_pad.set_active(true)?;
-        bin.add_pad(&ghost_pad)?;
-
-        source.set_property("video-sink", &bin);
-
-        // source.set_state(gst::State::Playing)?;
-
-        // debug!("Waiting for decoder to get source capabilities");
-        // wait for up to 5 seconds until the decoder gets the source capabilities
-        // source.state(gst::ClockTime::from_seconds(5)).0?;
-        let caps = ghost_pad.current_caps().ok_or(Missing("ghost_pad"))?;
-
-        let s = caps.structure(0).ok_or(Missing("caps"))?;
-
-        let width = s.get::<i32>("width").map_err(|_| Missing("width"))?;
-        let height = s.get::<i32>("height").map_err(|_| Missing("height"))?;
-        let framerate = s
-            .get::<gst::Fraction>("framerate")
-            .map_err(|_| Missing("framerate"))?;
-
-        // if live getting the duration doesn't make sense
-        // let duration = if !settings.live {
-        //     debug!("getting duration");
-        //     std::time::Duration::from_nanos(
-        //         source
-        //             .query_duration::<gst::ClockTime>()
-        //             .ok_or(Missing("Duration"))?
-        //             .nseconds(),
-        //     )
-        // } else {
-        //     debug!("live no duration");
-        //     std::time::Duration::from_secs(0)
-        // };
-        let duration = std::time::Duration::from_secs(0);
-
         // callback for video sink
         // creates then sends video handle to subscription
         app_sink.set_callbacks(
@@ -223,47 +191,106 @@ impl VideoPlayer {
         bus.add_watch(message_callback)
             .expect("Failed to add bus watch");
 
-        if !settings.auto_start {
-            debug!("auto start false setting state to paused");
-            source.set_state(gst::State::Paused)?;
-        }
+        debug!("getting duration");
+        // if live getting the duration doesn't make sense
+        let duration = if let Some(dur) = source.query_duration::<gst::ClockTime>() {
+            std::time::Duration::from_nanos(dur.nseconds())
+        } else {
+            debug!("live no duration");
+            std::time::Duration::from_secs(0)
+        };
 
         let video_player = VideoPlayer {
             bus,
             source,
-            width,
-            height,
-            framerate: framerate.numer() as f64 / framerate.denom() as f64,
+            bin,
+            videoconvert,
+            video_details: None,
             duration,
             paused: if settings.auto_start { false } else { true },
             muted: false,
             looping: false,
             is_eos: false,
             restart_stream: false,
+            auto_start: settings.auto_start,
         };
         info!("player initialized");
         Ok(video_player)
     }
 
+    pub fn set_source(&mut self, uri: impl Into<String>) -> Result<(), Error> {
+        info!("setting uri");
+        self.source.set_property("uri", uri.into());
+
+        debug!("Create ghost pad");
+        // create ghost pad
+        let pad = self
+            .videoconvert
+            .static_pad("sink")
+            .ok_or(MissingElement("no ghost pad"))?;
+        let ghost_pad = gst::GhostPad::with_target(Some("sink"), &pad)?;
+        ghost_pad.set_active(true)?;
+        self.bin.add_pad(&ghost_pad)?;
+
+        self.source.set_property("video-sink", &self.bin);
+
+        self.source.set_state(gst::State::Playing)?;
+
+        debug!("Waiting for decoder to get source capabilities");
+        // wait for up to 5 seconds until the decoder gets the source capabilities
+        self.source.state(gst::ClockTime::from_seconds(5)).0?;
+        let caps = ghost_pad.current_caps().ok_or(Missing("ghost_pad"))?;
+
+        let s = caps.structure(0).ok_or(Missing("caps"))?;
+
+        let framerate = s
+            .get::<gst::Fraction>("framerate")
+            .map_err(|_| Missing("framerate"))?;
+
+        self.video_details = Some(VideoDetails {
+            width: s.get::<i32>("width").map_err(|_| Missing("width"))?,
+            height: s.get::<i32>("height").map_err(|_| Missing("height"))?,
+            framerate: framerate.numer() as f64 / framerate.denom() as f64,
+        });
+
+        self.duration = if let Some(dur) = self.source.query_duration::<gst::ClockTime>() {
+            std::time::Duration::from_nanos(dur.nseconds())
+        } else {
+            debug!("live no duration");
+            std::time::Duration::from_secs(0)
+        };
+
+        if !self.auto_start {
+            debug!("auto start false setting state to paused");
+            self.source.set_state(gst::State::Paused)?;
+        }
+
+        Ok(())
+    }
+
     /// Get the size/resolution of the video as `(width, height)`.
     #[inline(always)]
-    pub fn size(&self) -> (i32, i32) {
-        (self.width, self.height)
+    pub fn size(&self) -> Option<(i32, i32)> {
+        if let Some(details) = &self.video_details {
+            Some((details.width, details.height))
+        } else {
+            None
+        }
     }
 
     /// Get the framerate of the video as frames per second.
     #[inline(always)]
-    pub fn framerate(&self) -> f64 {
-        self.framerate
+    pub fn framerate(&self) -> Option<f64> {
+        if let Some(details) = &self.video_details {
+            Some(details.framerate)
+        } else {
+            None
+        }
     }
 
     #[inline(always)]
     pub fn uri(&self) -> String {
         self.source.property("uri")
-    }
-
-    pub fn set_uri(&self, uri: impl Into<String>) {
-        self.source.set_property("uri", uri.into());
     }
 
     /// Set the volume multiplier of the audio.
