@@ -92,6 +92,7 @@ pub struct VideoPlayer {
     source: gst::Element,
     bin: gst::Bin,
     videoconvert: gst::Element,
+    ghost_pad: gst::GhostPad,
 
     video_details: Option<VideoDetails>,
     duration: std::time::Duration,
@@ -200,11 +201,20 @@ impl VideoPlayer {
             std::time::Duration::from_secs(0)
         };
 
+        debug!("Create ghost pad");
+        let pad = videoconvert
+            .static_pad("sink")
+            .ok_or(MissingElement("no ghost pad"))?;
+        let ghost_pad = gst::GhostPad::with_target(Some("sink"), &pad)?;
+        ghost_pad.set_active(true)?;
+        bin.add_pad(&ghost_pad)?;
+
         let video_player = VideoPlayer {
             bus,
             source,
             bin,
             videoconvert,
+            ghost_pad,
             video_details: None,
             duration,
             paused: if settings.auto_start { false } else { true },
@@ -222,16 +232,6 @@ impl VideoPlayer {
         info!("setting uri");
         self.source.set_property("uri", uri.into());
 
-        debug!("Create ghost pad");
-        // create ghost pad
-        let pad = self
-            .videoconvert
-            .static_pad("sink")
-            .ok_or(MissingElement("no ghost pad"))?;
-        let ghost_pad = gst::GhostPad::with_target(Some("sink"), &pad)?;
-        ghost_pad.set_active(true)?;
-        self.bin.add_pad(&ghost_pad)?;
-
         self.source.set_property("video-sink", &self.bin);
 
         self.source.set_state(gst::State::Playing)?;
@@ -239,7 +239,7 @@ impl VideoPlayer {
         debug!("Waiting for decoder to get source capabilities");
         // wait for up to 5 seconds until the decoder gets the source capabilities
         self.source.state(gst::ClockTime::from_seconds(5)).0?;
-        let caps = ghost_pad.current_caps().ok_or(Missing("ghost_pad"))?;
+        let caps = self.ghost_pad.current_caps().ok_or(Missing("ghost_pad"))?;
 
         let s = caps.structure(0).ok_or(Missing("caps"))?;
 
@@ -254,6 +254,7 @@ impl VideoPlayer {
         });
 
         self.duration = if let Some(dur) = self.source.query_duration::<gst::ClockTime>() {
+            debug!("duration: {}", dur);
             std::time::Duration::from_nanos(dur.nseconds())
         } else {
             debug!("live no duration");
