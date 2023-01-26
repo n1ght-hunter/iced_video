@@ -1,6 +1,3 @@
-use std::{borrow::Cow, sync::mpsc};
-
-use core::hash::Hash;
 use gst::{
     prelude::Continue,
     traits::{ElementExt, PadExt},
@@ -8,6 +5,7 @@ use gst::{
 };
 use gst_video::VideoFormat;
 use iced::{subscription, widget::image};
+use tokio::sync::mpsc;
 
 use crate::player::{VideoPlayer, VideoSettings};
 
@@ -24,7 +22,10 @@ enum PlayerSubscription {
     Next(mpsc::Receiver<SubMSG>),
 }
 
-pub fn video_subscription(id: impl Into<String>, settings: VideoSettings) -> iced::Subscription<SubMSG> {
+pub fn video_subscription(
+    id: impl Into<String>,
+    settings: VideoSettings,
+) -> iced::Subscription<SubMSG> {
     let id: String = id.into();
     subscription::unfold(
         id.clone(),
@@ -32,7 +33,7 @@ pub fn video_subscription(id: impl Into<String>, settings: VideoSettings) -> ice
         |state| async move {
             match state {
                 PlayerSubscription::Starting(id, settings) => {
-                    let (sender, receiver) = mpsc::channel::<SubMSG>();
+                    let (sender, receiver) = mpsc::channel::<SubMSG>(20);
                     let sender1 = sender.clone();
                     let id1 = id.clone();
                     let id2 = id.clone();
@@ -52,7 +53,7 @@ pub fn video_subscription(id: impl Into<String>, settings: VideoSettings) -> ice
                             let height = s.get::<i32>("height").map_err(|_| FlowError::Error)?;
 
                             sender
-                                .send(SubMSG::Image(
+                                .blocking_send(SubMSG::Image(
                                     id1.clone(),
                                     image::Handle::from_pixels(
                                         width as u32,
@@ -110,7 +111,7 @@ pub fn video_subscription(id: impl Into<String>, settings: VideoSettings) -> ice
                             };
 
                             sender1
-                                .send(SubMSG::Message(id2.clone(), message))
+                                .blocking_send(SubMSG::Message(id2.clone(), message))
                                 .expect("unable to send message");
 
                             // Tell the mainloop to continue executing this callback.
@@ -123,8 +124,8 @@ pub fn video_subscription(id: impl Into<String>, settings: VideoSettings) -> ice
                         PlayerSubscription::Next(receiver),
                     )
                 }
-                PlayerSubscription::Next(stream) => {
-                    let item = stream.recv().unwrap();
+                PlayerSubscription::Next(mut stream) => {
+                    let item = stream.recv().await.unwrap();
                     (Some(item), PlayerSubscription::Next(stream))
                 }
             }

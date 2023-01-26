@@ -3,6 +3,7 @@
 use gpu_controller::State;
 use video_player::player::{
     Buffer, Continue, ElementExt, FlowError, FlowSuccess, PadExt, VideoFormat, VideoPlayer,
+    VideoSettings,
 };
 use winit::{
     event::*,
@@ -32,9 +33,11 @@ async fn run() {
     let clone_loop = event_loop.create_proxy();
 
     let mut player = VideoPlayer::new(
-        "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-        false,
-        false,
+        VideoSettings {
+            uri:
+                Some("http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4".to_string()),
+            ..Default::default()
+        },
         VideoFormat::Rgba,
         move |sink| {
             let sample = sink.pull_sample().map_err(|_| FlowError::Eos)?;
