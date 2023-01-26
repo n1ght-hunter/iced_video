@@ -48,9 +48,12 @@ impl Application for App {
 
     fn subscription(&self) -> iced::Subscription<Self::Message> {
         video_subscription(
-            "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
-                .to_string(),
-            VideoSettings::default(),
+            "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+            VideoSettings {
+                auto_start: true,
+                uri: Some("http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4".to_string()),
+                ..Default::default()
+            },
         )
         .map(Message::Video)
     }

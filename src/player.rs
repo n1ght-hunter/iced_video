@@ -135,16 +135,9 @@ impl VideoPlayer {
 
         debug!("Initialize playbin");
         // playbin handle most sources and offers easy to impl controls
-        let source = if let Some(uri) = settings.uri {
-            gst::ElementFactory::make("playbin")
-                .property("uri", uri)
-                .build()
-                .map_err(|_| MissingElement("playbin"))?
-        } else {
-            gst::ElementFactory::make("playbin")
-                .build()
-                .map_err(|_| MissingElement("playbin"))?
-        };
+        let source = gst::ElementFactory::make("playbin")
+            .build()
+            .map_err(|_| MissingElement("playbin"))?;
 
         // Create elements that go inside the sink bin
         let videoconvert = gst::ElementFactory::make("videoconvert")
@@ -209,7 +202,7 @@ impl VideoPlayer {
         ghost_pad.set_active(true)?;
         bin.add_pad(&ghost_pad)?;
 
-        let video_player = VideoPlayer {
+        let mut video_player = VideoPlayer {
             bus,
             source,
             bin,
@@ -222,8 +215,12 @@ impl VideoPlayer {
             looping: false,
             is_eos: false,
             restart_stream: false,
-            auto_start: settings.auto_start,
+            auto_start: settings.auto_start.clone(),
         };
+        if let Some(url) = settings.uri {
+            video_player.set_source(url).unwrap();
+        }
+
         info!("player initialized");
         Ok(video_player)
     }
