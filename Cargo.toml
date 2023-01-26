@@ -13,6 +13,7 @@ glib = "0.16.3"
 gst = {package = "gstreamer", version = "0.19.3"}
 gst_app = {package = "gstreamer-app", version = "0.19.2"}
 gst_video = {package = "gstreamer-video", version = "0.19.3"}
+tokio = "1.24.2"
 
 [dependencies.iced]
 features = ["tokio", "debug", "image", "svg"]
