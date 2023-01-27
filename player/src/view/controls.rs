@@ -17,7 +17,7 @@ pub fn controls(state: &State) -> Element {
         0
     };
     let play_pause = if let Some(player) = &state.player {
-        if player.paused() {
+        if !player.playing() {
             widget::Button::new(
                 widget::svg(svgs::play_svg())
                     .height(Length::Units(28))

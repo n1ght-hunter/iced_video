@@ -10,8 +10,8 @@ pub fn control_event(state: &mut State, event: ControlEvent) -> iced::Command<Me
 
     if let Some(player) = p {
         match event {
-            ControlEvent::Play => player.set_paused_state(false),
-            ControlEvent::Pause => player.set_paused_state(true),
+            ControlEvent::Play => player.set_playing_state(true),
+            ControlEvent::Pause => player.set_playing_state(false),
             ControlEvent::ToggleMute => {
                 if player.muted() {
                     player.set_muted(false)

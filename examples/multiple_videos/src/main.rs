@@ -94,8 +94,8 @@ impl Application for App {
                 if let Some((player, _self_image)) = self.players.get_mut(&uri) {
                     if let Some(player) = player {
                         match event {
-                            ControlEvent::Play => player.set_paused_state(false),
-                            ControlEvent::Pause => player.set_paused_state(true),
+                            ControlEvent::Play => player.set_playing_state(false),
+                            ControlEvent::Pause => player.set_playing_state(true),
                             ControlEvent::ToggleMute => {
                                 if player.muted() {
                                     player.set_muted(false)
@@ -132,7 +132,7 @@ impl Application for App {
                     )
                     .on_press(Message::ControlEvent(
                         uri.clone(),
-                        if player.is_some() && player.as_ref().unwrap().paused() {
+                        if player.is_some() && !player.as_ref().unwrap().playing() {
                             ControlEvent::Play
                         } else {
                             ControlEvent::Pause

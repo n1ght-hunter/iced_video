@@ -60,7 +60,7 @@ where
         player.position().as_secs()
     };
 
-    let play_pause = if player.paused() {
+    let play_pause = if !player.playing()  {
         widget::Button::new(
             svg(svgs::play_svg())
                 .height(Length::Units(28))
