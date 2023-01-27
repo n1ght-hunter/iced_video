@@ -17,7 +17,7 @@ pub fn image(state: &State) -> Element {
     widget::container(
         widget::button(image)
             .on_press(if let Some(player) = &state.player {
-                if player.paused() {
+                if !player.playing() {
                     Message::ControlEvent(ControlEvent::Play)
                 } else {
                     Message::ControlEvent(ControlEvent::Pause)

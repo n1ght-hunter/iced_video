@@ -42,8 +42,11 @@ impl From<u64> for Position {
 }
 
 #[derive(Debug, Display, Error)]
-#[display(fmt = "Missing element {}", _0)]
-struct MissingElement(#[error(not(source))] &'static str);
+#[display(fmt = "Missing element {}: {}", element, error)]
+struct MissingElement {
+    element: &'static str,
+    error: String,
+}
 
 #[derive(Debug, Display, Error)]
 #[display(fmt = "Missing {}", _0)]
@@ -96,7 +99,6 @@ pub struct VideoPlayer {
 
     video_details: Option<VideoDetails>,
     duration: std::time::Duration,
-    paused: bool,
     muted: bool,
     looping: bool,
     is_eos: bool,
@@ -135,23 +137,37 @@ impl VideoPlayer {
 
         debug!("Initialize playbin");
         // playbin handle most sources and offers easy to impl controls
-        let source = gst::ElementFactory::make("playbin")
+        let source = gst::ElementFactory::make("playbin3")
             .build()
-            .map_err(|_| MissingElement("playbin"))?;
+            .map_err(|err| MissingElement {
+                element: "playbin3",
+                error: err.to_string(),
+            })?;
+
+        source.set_property("instant-uri", true);
 
         // Create elements that go inside the sink bin
         let videoconvert = gst::ElementFactory::make("videoconvert")
             .build()
-            .map_err(|_| MissingElement("videoconvert"))?;
+            .map_err(|err| MissingElement {
+                element: "videoconvert",
+                error: err.to_string(),
+            })?;
 
         let scale = gst::ElementFactory::make("videoscale")
             .build()
-            .map_err(|_| MissingElement("videoscale"))?;
+            .map_err(|err| MissingElement {
+                element: "videoscale",
+                error: err.to_string(),
+            })?;
 
         let app_sink = gst::ElementFactory::make("appsink")
             .name("sink")
             .build()
-            .map_err(|_| MissingElement("appsink"))?
+            .map_err(|err| MissingElement {
+                element: "appsink",
+                error: err.to_string(),
+            })?
             .dynamic_cast::<gst_app::AppSink>()
             .expect("unable to cast appsink");
 
@@ -195,9 +211,10 @@ impl VideoPlayer {
         };
 
         debug!("Create ghost pad");
-        let pad = videoconvert
-            .static_pad("sink")
-            .ok_or(MissingElement("no ghost pad"))?;
+        let pad = videoconvert.static_pad("sink").ok_or(MissingElement {
+            element: "Ghost pad",
+            error: "".to_string(),
+        })?;
         let ghost_pad = gst::GhostPad::with_target(Some("sink"), &pad)?;
         ghost_pad.set_active(true)?;
         bin.add_pad(&ghost_pad)?;
@@ -210,7 +227,6 @@ impl VideoPlayer {
             ghost_pad,
             video_details: None,
             duration,
-            paused: if settings.auto_start { false } else { true },
             muted: false,
             looping: false,
             is_eos: false,
@@ -341,27 +357,39 @@ impl VideoPlayer {
     }
 
     /// Set if the media is paused or not.
-    pub fn set_paused_state(&mut self, paused: bool) {
-        debug!("set paused state to: {}", paused);
+    pub fn set_playing_state(&mut self, playing: bool) {
+        debug!("set paused state to: {}", playing);
         self.source
-            .set_state(if paused {
-                gst::State::Paused
-            } else {
+            .set_state(if playing {
                 gst::State::Playing
+            } else {
+                gst::State::Paused
             })
             .unwrap(/* state was changed in ctor; state errors caught there */);
-        self.paused = paused;
 
         // Set restart_stream flag to make the stream restart on the next Message::NextFrame
-        if self.is_eos && !paused {
+        if self.is_eos && playing {
             self.restart_stream = true;
         }
     }
 
     /// Get if the media is paused or not.
     #[inline(always)]
-    pub fn paused(&self) -> bool {
-        self.paused
+    pub fn state(&self) -> gst::State {
+        self.source.current_state()
+    }
+
+    /// Get if the media is paused or not.
+    #[inline(always)]
+    pub fn playing(&self) -> bool {
+        match self.source.current_state() {
+            gst::State::VoidPending => false,
+            gst::State::Null => false,
+            gst::State::Ready => false,
+            gst::State::Paused => false,
+            gst::State::Playing => true,
+            _ => false,
+        }
     }
 
     /// Jumps to a specific position in the media.
@@ -403,7 +431,7 @@ impl VideoPlayer {
     /// Restarts a stream; seeks to the first frame and unpauses, sets the `eos` flag to false.
     pub fn restart_stream(&mut self) -> Result<(), Error> {
         self.is_eos = false;
-        self.set_paused_state(false);
+        self.set_playing_state(false);
         // self.seek(0)?;
         Ok(())
     }

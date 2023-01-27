@@ -93,7 +93,7 @@ async fn run() {
                             modifiers: _,
                         } => match button {
                             MouseButton::Left => match state {
-                                ElementState::Pressed => player.set_paused_state(!player.paused()),
+                                ElementState::Pressed => player.set_playing_state(!player.playing()),
                                 ElementState::Released => {}
                             },
                             _ => {}

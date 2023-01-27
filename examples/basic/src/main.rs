@@ -80,8 +80,8 @@ impl Application for App {
                 let player = self.video_players.as_mut().unwrap();
 
                 match event {
-                    ControlEvent::Play => player.set_paused_state(false),
-                    ControlEvent::Pause => player.set_paused_state(true),
+                    ControlEvent::Play => player.set_playing_state(true),
+                    ControlEvent::Pause => player.set_playing_state(false),
                     ControlEvent::ToggleMute => {
                         if player.muted() {
                             player.set_muted(false)
