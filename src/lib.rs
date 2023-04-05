@@ -1,5 +1,7 @@
 pub mod iced_subscription;
 pub mod player;
+pub mod video_handler;
+pub mod video_settings;
 // pub mod floating;
 // pub mod floating_element;
 pub mod svgs;
