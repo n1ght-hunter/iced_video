@@ -9,6 +9,8 @@ use gst_app::AppSink;
 pub use gst_video::VideoFormat;
 use log::{debug, info};
 
+use crate::video_settings::VideoSettings;
+
 /// Position in the media.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Position {
@@ -59,27 +61,6 @@ struct ErrorMessage {
     error: String,
     debug: Option<String>,
     source: glib::Error,
-}
-
-/// setting when creating a player
-#[derive(Clone, Debug)]
-pub struct VideoSettings {
-    /// start player in play state
-    pub auto_start: bool,
-    /// if live duration won't work and trying to seek will cause a panic
-    pub live: bool,
-    /// vdieo uri
-    pub uri: Option<String>,
-}
-
-impl Default for VideoSettings {
-    fn default() -> Self {
-        Self {
-            auto_start: false,
-            live: false,
-            uri: None,
-        }
-    }
 }
 
 #[derive(Clone, Debug)]

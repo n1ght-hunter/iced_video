@@ -7,36 +7,33 @@ use gst_video::VideoFormat;
 use iced::{subscription, widget::image};
 use tokio::sync::mpsc;
 
-use crate::player::{VideoPlayer, VideoSettings};
+use crate::{player::VideoPlayer, video_settings::VideoSettings};
 
 #[derive(Clone, Debug)]
-pub enum SubMSG {
+pub enum PlayerMessage {
     Player(String, VideoPlayer),
     Image(String, image::Handle),
-    Message(String, GSTMessage),
+    Message(String, gst::Message),
 }
 
 #[derive(Debug)]
 enum PlayerSubscription {
-    Starting(String, VideoSettings),
-    Next(mpsc::Receiver<SubMSG>),
+    Starting(VideoSettings),
+    Next(mpsc::Receiver<PlayerMessage>),
 }
 
-pub fn video_subscription(
-    id: impl Into<String>,
-    settings: VideoSettings,
-) -> iced::Subscription<SubMSG> {
-    let id: String = id.into();
+pub fn video_subscription(settings: VideoSettings) -> iced::Subscription<PlayerMessage> {
     subscription::unfold(
-        id.clone(),
-        PlayerSubscription::Starting(id, settings),
+        settings.id.clone(),
+        PlayerSubscription::Starting(settings),
         |state| async move {
             match state {
-                PlayerSubscription::Starting(id, settings) => {
-                    let (sender, receiver) = mpsc::channel::<SubMSG>(20);
+                PlayerSubscription::Starting(settings) => {
+                    let (sender, receiver) = mpsc::channel::<PlayerMessage>(20);
                     let sender1 = sender.clone();
-                    let id1 = id.clone();
-                    let id2 = id.clone();
+                    let id = settings.id.clone();
+                    let id1 = settings.id.clone();
+                    let id2 = settings.id.clone();
                     let player = VideoPlayer::new(
                         settings,
                         VideoFormat::Rgba,
@@ -53,7 +50,7 @@ pub fn video_subscription(
                             let height = s.get::<i32>("height").map_err(|_| FlowError::Error)?;
 
                             sender
-                                .blocking_send(SubMSG::Image(
+                                .blocking_send(PlayerMessage::Image(
                                     id1.clone(),
                                     image::Handle::from_pixels(
                                         width as u32,
@@ -66,52 +63,8 @@ pub fn video_subscription(
                             Ok(FlowSuccess::Ok)
                         },
                         move |_bus, msg| {
-                            let view = msg.view();
-
-                            let message = match view {
-                                MessageView::Eos(_) => GSTMessage::Eos,
-                                MessageView::Error(_) => GSTMessage::Error,
-                                MessageView::Warning(_) => GSTMessage::Warning,
-                                MessageView::Info(_) => GSTMessage::Info,
-                                MessageView::Tag(_) => GSTMessage::Tag,
-                                MessageView::Buffering(_) => GSTMessage::Buffering,
-                                MessageView::StateChanged(_) => GSTMessage::StateChanged,
-                                MessageView::StateDirty(_) => GSTMessage::StateDirty,
-                                MessageView::StepDone(_) => GSTMessage::StepDone,
-                                MessageView::ClockProvide(_) => GSTMessage::ClockProvide,
-                                MessageView::ClockLost(_) => GSTMessage::ClockLost,
-                                MessageView::NewClock(_) => GSTMessage::NewClock,
-                                MessageView::StructureChange(_) => GSTMessage::StructureChange,
-                                MessageView::StreamStatus(_) => GSTMessage::StreamStatus,
-                                MessageView::Application(_) => GSTMessage::Application,
-                                MessageView::Element(_) => GSTMessage::Element,
-                                MessageView::SegmentStart(_) => GSTMessage::SegmentStart,
-                                MessageView::SegmentDone(_) => GSTMessage::SegmentDone,
-                                MessageView::DurationChanged(_) => GSTMessage::DurationChanged,
-                                MessageView::Latency(_) => GSTMessage::Latency,
-                                MessageView::AsyncStart(_) => GSTMessage::AsyncStart,
-                                MessageView::AsyncDone(_) => GSTMessage::AsyncDone,
-                                MessageView::RequestState(_) => GSTMessage::RequestState,
-                                MessageView::StepStart(_) => GSTMessage::StepStart,
-                                MessageView::Qos(_) => GSTMessage::Qos,
-                                MessageView::Progress(_) => GSTMessage::Progress,
-                                MessageView::Toc(_) => GSTMessage::Toc,
-                                MessageView::ResetTime(_) => GSTMessage::ResetTime,
-                                MessageView::StreamStart(_) => GSTMessage::StreamStart,
-                                MessageView::NeedContext(_) => GSTMessage::NeedContext,
-                                MessageView::HaveContext(_) => GSTMessage::HaveContext,
-                                MessageView::DeviceAdded(_) => GSTMessage::DeviceAdded,
-                                MessageView::DeviceRemoved(_) => GSTMessage::DeviceRemoved,
-                                MessageView::PropertyNotify(_) => GSTMessage::PropertyNotify,
-                                MessageView::StreamCollection(_) => GSTMessage::StreamCollection,
-                                MessageView::StreamsSelected(_) => GSTMessage::StreamsSelected,
-                                MessageView::Redirect(_) => GSTMessage::Redirect,
-                                MessageView::Other => GSTMessage::Other,
-                                _ => GSTMessage::Other,
-                            };
-
                             sender1
-                                .blocking_send(SubMSG::Message(id2.clone(), message))
+                                .blocking_send(PlayerMessage::Message(id2.clone(), msg.copy()))
                                 .expect("unable to send message");
 
                             // Tell the mainloop to continue executing this callback.
@@ -120,7 +73,7 @@ pub fn video_subscription(
                     )
                     .unwrap();
                     (
-                        Some(SubMSG::Player(id, player)),
+                        Some(PlayerMessage::Player(id, player)),
                         PlayerSubscription::Next(receiver),
                     )
                 }
@@ -131,46 +84,4 @@ pub fn video_subscription(
             }
         },
     )
-}
-
-#[derive(Clone, Debug)]
-pub enum GSTMessage {
-    Eos,
-    Error,
-    Warning,
-    Info,
-    Tag,
-    Buffering,
-    StateChanged,
-    StateDirty,
-    StepDone,
-    ClockProvide,
-    ClockLost,
-    NewClock,
-    StructureChange,
-    StreamStatus,
-    Application,
-    Element,
-    SegmentStart,
-    SegmentDone,
-    DurationChanged,
-    Latency,
-    AsyncStart,
-    AsyncDone,
-    RequestState,
-    StepStart,
-    Qos,
-    Progress,
-    Toc,
-    ResetTime,
-    StreamStart,
-    NeedContext,
-    HaveContext,
-    DeviceAdded,
-    DeviceRemoved,
-    PropertyNotify,
-    StreamCollection,
-    StreamsSelected,
-    Redirect,
-    Other,
 }
