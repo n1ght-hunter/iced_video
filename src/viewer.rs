@@ -77,7 +77,7 @@ where
         .on_press(on_event(ControlEvent::Pause).clone())
     };
 
-    let duration_text = text(format!("{} / {}", position, duration));
+    let duration_text = text(format!("{} / {}", secs_to_hhmmss(position), secs_to_hhmmss(duration)));
 
     let volume = player.get_volume();
     let volume_svg = if volume > 0.66 {
@@ -139,4 +139,19 @@ where
         orverlay,
     );
     container(content).into()
+}
+
+
+fn secs_to_hhmmss(secs: u64) -> String {
+    let hours = secs / 3600;
+    let minutes = (secs % 3600) / 60;
+    let seconds = secs % 60;
+
+    if hours > 0 {
+        format!("{:02}:{:02}:{:02}", hours, minutes, seconds)
+    } else if minutes < 10 {
+        format!("{:01}:{:02}", minutes, seconds)
+    } else {
+        format!("{:02}:{:02}", minutes, seconds)
+    }
 }
