@@ -1,3 +1,5 @@
+//! The Player wrapper for the gstreamer playbin.
+
 use anyhow::Error;
 use derive_more::{Display, Error};
 pub use gst::{prelude::*, Buffer, Bus, Message};
@@ -60,6 +62,7 @@ struct ErrorMessage {
     source: glib::Error,
 }
 
+/// stores some details about the video.
 #[derive(Clone, Debug)]
 pub struct VideoDetails {
     width: i32,
@@ -67,6 +70,8 @@ pub struct VideoDetails {
     framerate: f64,
 }
 
+/// the main player controller for the video player.
+/// holds the gstreamer pipeline and the app sink.
 #[derive(Clone, Debug)]
 pub struct VideoPlayer {
     bus: gst::Bus,
@@ -85,6 +90,7 @@ pub struct VideoPlayer {
     auto_start: bool,
 }
 
+#[allow(unused_results)]
 impl Drop for VideoPlayer {
     fn drop(&mut self) {
         self.source
@@ -163,7 +169,8 @@ impl VideoPlayer {
             .bus()
             .expect("Pipeline without bus. Shouldn't happen!");
 
-        bus.add_watch(message_callback)
+        let _ = bus
+            .add_watch(message_callback)
             .expect("Failed to add bus watch");
 
         debug!("getting duration");
@@ -206,17 +213,20 @@ impl VideoPlayer {
         Ok(video_player)
     }
 
+    /// Set the source of the video player.
+    /// This will reset the player to the beginning of the video.
+    /// If the player is currently playing it will be paused.
     pub fn set_source(&mut self, uri: impl Into<String>) -> Result<(), Error> {
         info!("setting uri");
         self.source.set_property("uri", uri.into());
 
         self.source.set_property("video-sink", &self.bin);
 
-        self.source.set_state(gst::State::Playing)?;
+        let _ = self.source.set_state(gst::State::Playing)?;
 
         debug!("Waiting for decoder to get source capabilities");
         // wait for up to 5 seconds until the decoder gets the source capabilities
-        self.source.state(gst::ClockTime::from_seconds(5)).0?;
+        let _ = self.source.state(gst::ClockTime::from_seconds(5)).0?;
         let caps = self.ghost_pad.current_caps().ok_or(Missing("ghost_pad"))?;
 
         let s = caps.structure(0).ok_or(Missing("caps"))?;
@@ -241,7 +251,7 @@ impl VideoPlayer {
 
         if !self.auto_start {
             debug!("auto start false setting state to paused");
-            self.source.set_state(gst::State::Paused)?;
+            let _ = self.source.set_state(gst::State::Paused)?;
         }
 
         Ok(())
@@ -267,6 +277,8 @@ impl VideoPlayer {
         }
     }
 
+    /// set the uri of the video player.
+    /// This will reset the player to the beginning of the video.
     #[inline(always)]
     pub fn uri(&self) -> String {
         self.source.property("uri")
@@ -324,7 +336,7 @@ impl VideoPlayer {
     /// Set if the media is paused or not.
     pub fn set_paused_state(&mut self, paused: bool) {
         debug!("set paused state to: {}", paused);
-        self.source
+        let _ = self.source
             .set_state(if paused {
                 gst::State::Paused
             } else {
@@ -370,14 +382,16 @@ impl VideoPlayer {
         self.duration
     }
 
+    /// Get the gst bus of the player.
     #[inline(always)]
     pub fn get_bus(&self) -> &Bus {
         &self.bus
     }
 
+    /// send an event to the bus to exit the player.
     pub fn exit(&mut self) -> Result<(), Error> {
         debug!("exiting");
-        self.source.send_event(gst::event::Eos::new());
+        let _ = self.source.send_event(gst::event::Eos::new());
         Ok(())
     }
 

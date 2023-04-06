@@ -1,3 +1,5 @@
+//! This module contains the subscription for the video player. this will update the frame with the new video frame.
+
 use gst::{
     prelude::Continue,
     traits::{ElementExt, PadExt},
@@ -9,19 +11,26 @@ use tokio::sync::mpsc;
 
 use crate::{player::VideoPlayer, video_settings::VideoSettings};
 
+
+/// The message that is sent to the main thread.
 #[derive(Clone, Debug)]
 pub enum PlayerMessage {
+    /// The player id and the player.
     Player(String, VideoPlayer),
+    /// The player id and the image.
     Image(String, image::Handle),
+    /// The player id and the message.
     Message(String, gst::Message),
 }
 
+/// The Subscription state.
 #[derive(Debug)]
 enum PlayerSubscription {
     Starting(VideoSettings),
     Next(mpsc::Receiver<PlayerMessage>),
 }
 
+/// The subscription for the video player.
 pub fn video_subscription(settings: VideoSettings) -> iced::Subscription<PlayerMessage> {
     subscription::unfold(
         settings.id.clone(),

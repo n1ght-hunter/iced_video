@@ -1,5 +1,7 @@
+//! This module contains the SVGs used in the application.
 use iced::widget::svg;
 
+/// The play svg.
 pub fn play_svg() -> svg::Handle {
     svg::Handle::from_memory("
     <svg xmlns='http://www.w3.org/2000/svg' fill='white' class='bi bi-play-fill' viewBox='0 0 16 16'>
@@ -7,6 +9,8 @@ pub fn play_svg() -> svg::Handle {
     </svg>
     ".as_bytes())
 }
+
+/// low volume svg.
 pub fn low_volume_svg() -> svg::Handle {
     svg::Handle::from_memory("
     <svg xmlns='http://www.w3.org/2000/svg' fill='white' class='bi bi-volume-off-fill' viewBox='0 0 16 16'>
@@ -14,6 +18,8 @@ pub fn low_volume_svg() -> svg::Handle {
     </svg>
     ".as_bytes())
 }
+
+/// medium volume svg.
 pub fn medium_volume_svg() -> svg::Handle {
     svg::Handle::from_memory("
     <svg xmlns='http://www.w3.org/2000/svg' fill='white' class='bi bi-volume-down-fill' viewBox='0 0 16 16'>
@@ -21,6 +27,8 @@ pub fn medium_volume_svg() -> svg::Handle {
     </svg>
     ".as_bytes())
 }
+
+/// high volume svg.
 pub fn high_volume_svg() -> svg::Handle {
     svg::Handle::from_memory("
     <svg xmlns='http://www.w3.org/2000/svg' fill='white' class='bi bi-volume-up-fill' viewBox='0 0 16 16'>
@@ -30,6 +38,8 @@ pub fn high_volume_svg() -> svg::Handle {
     </svg>
     ".as_bytes())
 }
+
+/// The pause svg.
 pub fn pause_svg() -> svg::Handle {
     svg::Handle::from_memory("
     <svg xmlns='http://www.w3.org/2000/svg' fill='white' class='bi bi-pause-fill' viewBox='0 0 16 16'>
@@ -37,6 +47,8 @@ pub fn pause_svg() -> svg::Handle {
     </svg>
     ".as_bytes())
 }
+
+/// The mute svg.   
 pub fn muted_svg() -> svg::Handle {
     svg::Handle::from_memory("
     <svg xmlns='http://www.w3.org/2000/svg' fill='white' class='bi bi-volume-mute-fill' viewBox='0 0 16 16'>
