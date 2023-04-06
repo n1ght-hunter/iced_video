@@ -96,29 +96,14 @@ impl Application for App {
     }
 
     fn view(&self) -> iced::Element<Message> {
-        let player: Element<Message> = if let Some(player) =self
-            .player_handler
-            .get_player(&self.id) {
+        let player: Element<Message> =
+            if let Some(player) = self.player_handler.get_player(&self.id) {
                 let frame = self.player_handler.get_frame(&self.id);
-                video_view(
-                    player,
-                    frame,
-                    &Message::ControlEvent,
-                    &self.seek,
-                )
-                .into()
+                video_view(player, frame, &Message::ControlEvent, &self.seek).into()
             } else {
-                widget::Text::new("No player")
-                    .size(30)
-                    .into()
+                widget::Text::new("No player").size(30).into()
             };
-           
 
-
-
-        container(player)
-            .center_x()
-            .center_y()
-            .into()
+        container(player).center_x().center_y().into()
     }
 }
