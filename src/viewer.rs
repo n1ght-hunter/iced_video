@@ -20,7 +20,7 @@ pub enum ControlEvent {
 
 pub fn video_view<'a, Message, Renderer, F>(
     player: &'a VideoPlayer,
-    frame: &'a Option<iced_native::image::Handle>,
+    frame: Option<&'a iced_native::image::Handle>,
     on_event: &'a F,
     seek_amount: &'a Option<u64>,
 ) -> iced::Element<'a, Message, Renderer>
