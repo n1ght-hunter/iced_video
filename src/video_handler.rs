@@ -44,15 +44,19 @@ impl PlayerHandler {
 }
 
 impl PlayerHandler {
-    pub fn get_player(&mut self, id: &str) -> Option<&mut VideoPlayer> {
+    pub fn get_player_mut(&mut self, id: &str) -> Option<&mut VideoPlayer> {
         self.players.get_mut(id)
+    }
+
+    pub fn get_player(&self, id: &str) -> Option<&VideoPlayer> {
+        self.players.get(id)
     }
 
     pub fn get_all_players(&self) -> &HashMap<String, VideoPlayer> {
         &self.players
     }
 
-    pub fn get_image(&self, id: &str) -> Option<&image::Handle> {
+    pub fn get_frame(&self, id: &str) -> Option<&image::Handle> {
         self.images.get(id)
     }
 

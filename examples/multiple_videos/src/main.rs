@@ -72,7 +72,7 @@ impl Application for App {
             }
 
             Message::ControlEvent(uri, event) => {
-                if let Some(player) = self.player_handler.get_player(&uri) {
+                if let Some(player) = self.player_handler.get_player_mut(&uri) {
                     match event {
                         ControlEvent::Play => player.set_paused_state(false),
                         ControlEvent::Pause => player.set_paused_state(true),

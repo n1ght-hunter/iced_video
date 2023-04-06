@@ -26,7 +26,6 @@ version = "0.7"
 [workspace]
 members = [
   "player",
-  "wgpu_testing",
   "examples/basic",
   "examples/gifs",
   "examples/multiple_videos",
