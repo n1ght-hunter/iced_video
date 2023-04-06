@@ -1,3 +1,6 @@
+//! A widget that overlays another widget with a modal.
+//! this is used to overlay the video controls on top of the video.
+
 use iced_native::alignment::Alignment;
 use iced_native::widget::{self, Tree};
 use iced_native::{
@@ -5,6 +8,8 @@ use iced_native::{
     Point, Rectangle, Shell, Size, Widget,
 };
 
+/// A widget that overlays another widget with a modal.
+#[allow(missing_debug_implementations)]
 pub struct Overlay<'a, Message, Renderer> {
     base: Element<'a, Message, Renderer>,
     modal: Element<'a, Message, Renderer>,

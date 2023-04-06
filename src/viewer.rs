@@ -1,3 +1,5 @@
+//! Video viewer
+//! displays the video and the overlay
 use iced::{
     alignment::{Horizontal, Vertical},
     widget::{self, column, container, row, svg, text},
@@ -8,6 +10,8 @@ use iced_futures::MaybeSend;
 
 use crate::{overlay::Overlay, player::VideoPlayer, svgs};
 
+/// viewer event enum
+#[allow(missing_docs)]
 #[derive(Clone, Debug)]
 pub enum ControlEvent {
     Play,
@@ -18,6 +22,7 @@ pub enum ControlEvent {
     Released,
 }
 
+/// a viewer fuction to make an over easyliy 
 pub fn video_view<'a, Message, Renderer, F>(
     player: &'a VideoPlayer,
     frame: Option<&'a iced_native::image::Handle>,
