@@ -8,7 +8,9 @@ use iced::{
 
 use iced_futures::MaybeSend;
 
-use crate::{overlay::Overlay, player::VideoPlayer, svgs, helpers::helper_functions::secs_to_hhmmss};
+use crate::{
+    helpers::helper_functions::secs_to_hhmmss, overlay::Overlay, player::VideoPlayer, svgs,
+};
 
 /// viewer event enum
 #[allow(missing_docs)]

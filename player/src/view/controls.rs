@@ -1,10 +1,10 @@
 use iced::{color, widget, Alignment, Background, Color, Length, Padding};
-use iced_video::{svgs, viewer::ControlEvent, helpers::helper_functions::secs_to_hhmmss};
+use iced_video::{helpers::helper_functions::secs_to_hhmmss, svgs, viewer::ControlEvent};
 
 use crate::{state::State, theme, update::Message, Element};
 
 pub fn controls(state: &State) -> Element {
-    let player =  state.player_handler.get_player("main player".into());
+    let player = state.player_handler.get_player("main player".into());
     let duration = if let Some(p) = player {
         p.duration().as_secs()
     } else {
@@ -19,28 +19,16 @@ pub fn controls(state: &State) -> Element {
     };
     let play_pause = if let Some(player) = player {
         if player.paused() {
-            widget::Button::new(
-                widget::svg(svgs::play_svg())
-                    .height(28)
-                    .width(28),
-            )
-            .on_press(Message::ControlEvent(ControlEvent::Play))
+            widget::Button::new(widget::svg(svgs::play_svg()).height(28).width(28))
+                .on_press(Message::ControlEvent(ControlEvent::Play))
         } else {
-            widget::Button::new(
-                widget::svg(svgs::pause_svg())
-                    .height(28)
-                    .width(28),
-            )
-            // .style(theme::Button::Transparent)
-            .on_press(Message::ControlEvent(ControlEvent::Pause))
+            widget::Button::new(widget::svg(svgs::pause_svg()).height(28).width(28))
+                // .style(theme::Button::Transparent)
+                .on_press(Message::ControlEvent(ControlEvent::Pause))
         }
     } else {
-        widget::Button::new(
-            widget::svg(svgs::play_svg())
-                .height(28)
-                .width(28),
-        )
-        .on_press(Message::ControlEvent(ControlEvent::Play))
+        widget::Button::new(widget::svg(svgs::play_svg()).height(28).width(28))
+            .on_press(Message::ControlEvent(ControlEvent::Play))
     };
 
     let duration_text = widget::container(widget::text(format!(
@@ -67,27 +55,15 @@ pub fn controls(state: &State) -> Element {
 
     let volume_button = if let Some(player) = player {
         if !player.muted() {
-            widget::Button::new(
-                widget::svg(volume_svg)
-                    .height(28)
-                    .width(28),
-            )
-            .on_press(Message::ControlEvent(ControlEvent::ToggleMute))
+            widget::Button::new(widget::svg(volume_svg).height(28).width(28))
+                .on_press(Message::ControlEvent(ControlEvent::ToggleMute))
         } else {
-            widget::Button::new(
-                widget::svg(svgs::muted_svg())
-                    .height(28)
-                    .width(28),
-            )
-            .on_press(Message::ControlEvent(ControlEvent::ToggleMute))
+            widget::Button::new(widget::svg(svgs::muted_svg()).height(28).width(28))
+                .on_press(Message::ControlEvent(ControlEvent::ToggleMute))
         }
     } else {
-        widget::Button::new(
-            widget::svg(volume_svg)
-                .height(28)
-                .width(28),
-        )
-        .on_press(Message::ControlEvent(ControlEvent::ToggleMute))
+        widget::Button::new(widget::svg(volume_svg).height(28).width(28))
+            .on_press(Message::ControlEvent(ControlEvent::ToggleMute))
     };
 
     let volume_slider = widget::container(

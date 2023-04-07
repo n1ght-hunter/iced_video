@@ -22,7 +22,9 @@ pub fn control_event(state: &mut State, event: ControlEvent) -> iced::Command<Me
                 state.seek = Some(seek_amount as u64);
             }
             ControlEvent::Released => {
-                player.seek(state.seek.unwrap()).unwrap_or_else(|err| println!("Error seeking: {:?}", err));
+                player
+                    .seek(state.seek.unwrap())
+                    .unwrap_or_else(|err| println!("Error seeking: {:?}", err));
                 state.seek = None;
             }
         };

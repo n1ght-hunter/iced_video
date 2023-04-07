@@ -1,9 +1,9 @@
 //! # Iced Player
-//! A video player built with [iced] and gstreamer. 
+//! A video player built with [iced] and gstreamer.
 //! this is a WIP project, so expect bugs and missing features.
-//! 
+//!
 //! this is a simple to use viper player api, that can be used to build a video player with iced.
-//! 
+//!
 //! ## Features
 //! - [x] Play videos from local files and streams
 //! - [] Play videos in fullscreen
@@ -22,11 +22,11 @@
 #![allow(clippy::inherent_to_string, clippy::type_complexity)]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
+pub mod helpers;
 pub mod iced_subscription;
+pub mod overlay;
 pub mod player;
 pub mod player_handler;
-pub mod video_settings;
 pub mod svgs;
-pub mod overlay;
+pub mod video_settings;
 pub mod viewer;
-pub mod helpers;
