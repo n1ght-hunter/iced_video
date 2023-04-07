@@ -11,7 +11,6 @@ use tokio::sync::mpsc;
 
 use crate::{player::VideoPlayer, video_settings::VideoSettings};
 
-
 /// The message that is sent to the main thread.
 #[derive(Clone, Debug)]
 pub enum PlayerMessage {

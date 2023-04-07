@@ -16,15 +16,17 @@ pub fn image(state: &State) -> Element {
 
     widget::container(
         widget::button(image)
-            .on_press(if let Some(player) = state.player_handler.get_player("main player".into()) {
-                if player.paused() {
-                    Message::ControlEvent(ControlEvent::Play)
+            .on_press(
+                if let Some(player) = state.player_handler.get_player("main player".into()) {
+                    if player.paused() {
+                        Message::ControlEvent(ControlEvent::Play)
+                    } else {
+                        Message::ControlEvent(ControlEvent::Pause)
+                    }
                 } else {
-                    Message::ControlEvent(ControlEvent::Pause)
-                }
-            } else {
-                Message::None(())
-            })
+                    Message::None(())
+                },
+            )
             .style(theme::Button::Transparent),
     )
     .height(Length::Fill)

@@ -9,7 +9,8 @@ use crate::{
 
 pub fn menu(state: &State) -> Element {
     widget::container(
-        widget::button(widget::text("Open File")).on_press(Message::MenuEvent(MenuEvent::OpenFileDialog)),
+        widget::button(widget::text("Open File"))
+            .on_press(Message::MenuEvent(MenuEvent::OpenFileDialog)),
     )
     .into()
 }
