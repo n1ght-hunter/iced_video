@@ -24,8 +24,9 @@
 
 pub mod iced_subscription;
 pub mod player;
-pub mod video_handler;
+pub mod player_handler;
 pub mod video_settings;
 pub mod svgs;
 pub mod overlay;
 pub mod viewer;
+pub mod helpers;

@@ -8,7 +8,7 @@ use iced::{
 
 use iced_futures::MaybeSend;
 
-use crate::{overlay::Overlay, player::VideoPlayer, svgs};
+use crate::{overlay::Overlay, player::VideoPlayer, svgs, helpers::helper_functions::secs_to_hhmmss};
 
 /// viewer event enum
 #[allow(missing_docs)]
@@ -127,18 +127,4 @@ where
 
     let content = Overlay::new(container(image).width(*width).height(*height), orverlay);
     container(content).into()
-}
-
-fn secs_to_hhmmss(secs: u64) -> String {
-    let hours = secs / 3600;
-    let minutes = (secs % 3600) / 60;
-    let seconds = secs % 60;
-
-    if hours > 0 {
-        format!("{:02}:{:02}:{:02}", hours, minutes, seconds)
-    } else if minutes < 10 {
-        format!("{:01}:{:02}", minutes, seconds)
-    } else {
-        format!("{:02}:{:02}", minutes, seconds)
-    }
 }

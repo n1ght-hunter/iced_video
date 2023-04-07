@@ -5,7 +5,7 @@ use iced::{
 };
 use iced_video::{
     iced_subscription::PlayerMessage,
-    video_handler::PlayerHandler,
+    player_handler::PlayerHandler,
     video_settings::VideoSettings,
     viewer::{video_view, ControlEvent},
 };

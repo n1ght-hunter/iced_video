@@ -6,9 +6,7 @@ use crate::state::State;
 use super::Message;
 
 pub fn control_event(state: &mut State, event: ControlEvent) -> iced::Command<Message> {
-    let p = state.player.as_mut();
-
-    if let Some(player) = p {
+    if let Some(player) = state.player_handler.get_player_mut("main player".into()) {
         match event {
             ControlEvent::Play => player.set_paused_state(false),
             ControlEvent::Pause => player.set_paused_state(true),
@@ -20,11 +18,11 @@ pub fn control_event(state: &mut State, event: ControlEvent) -> iced::Command<Me
                 }
             }
             ControlEvent::Volume(volume) => player.set_volume(volume),
-            ControlEvent::Seek(p) => {
-                state.seek = Some(p as u64);
+            ControlEvent::Seek(seek_amount) => {
+                state.seek = Some(seek_amount as u64);
             }
             ControlEvent::Released => {
-                player.seek(state.seek.unwrap()).unwrap_or_else(|_| ());
+                player.seek(state.seek.unwrap()).unwrap_or_else(|err| println!("Error seeking: {:?}", err));
                 state.seek = None;
             }
         };

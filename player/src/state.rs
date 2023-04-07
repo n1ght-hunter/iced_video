@@ -1,11 +1,10 @@
 use iced::{widget::image, Command};
-use iced_video::player::VideoPlayer;
+use iced_video::{player::VideoPlayer, player_handler::PlayerHandler};
 
 use crate::update::Message;
 
 pub struct State {
-    pub player: Option<VideoPlayer>,
-    pub frame: Option<image::Handle>,
+    pub player_handler: PlayerHandler,
     pub seek: Option<u64>,
     pub title: String,
 }
@@ -14,9 +13,7 @@ impl State {
     pub fn new() -> (State, Command<Message>) {
         (
             State {
-                player_handler
-                player: None,
-                frame: None,
+                player_handler: PlayerHandler::default(),
                 seek: None,
                 title: String::from("Video Player"),
             },

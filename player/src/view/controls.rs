@@ -1,34 +1,35 @@
 use iced::{color, widget, Alignment, Background, Color, Length, Padding};
-use iced_video::{svgs, viewer::ControlEvent};
+use iced_video::{svgs, viewer::ControlEvent, helpers::helper_functions::secs_to_hhmmss};
 
 use crate::{state::State, theme, update::Message, Element};
 
 pub fn controls(state: &State) -> Element {
-    let duration = if let Some(p) = &state.player {
+    let player =  state.player_handler.get_player("main player".into());
+    let duration = if let Some(p) = player {
         p.duration().as_secs()
     } else {
         0
     };
     let position = if let Some(seek) = state.seek {
         seek.to_owned()
-    } else if let Some(p) = &state.player {
+    } else if let Some(p) = player {
         p.position().as_secs()
     } else {
         0
     };
-    let play_pause = if let Some(player) = &state.player {
+    let play_pause = if let Some(player) = player {
         if player.paused() {
             widget::Button::new(
                 widget::svg(svgs::play_svg())
-                    .height(Length::Units(28))
-                    .width(Length::Units(28)),
+                    .height(28)
+                    .width(28),
             )
             .on_press(Message::ControlEvent(ControlEvent::Play))
         } else {
             widget::Button::new(
                 widget::svg(svgs::pause_svg())
-                    .height(Length::Units(28))
-                    .width(Length::Units(28)),
+                    .height(28)
+                    .width(28),
             )
             // .style(theme::Button::Transparent)
             .on_press(Message::ControlEvent(ControlEvent::Pause))
@@ -36,20 +37,20 @@ pub fn controls(state: &State) -> Element {
     } else {
         widget::Button::new(
             widget::svg(svgs::play_svg())
-                .height(Length::Units(28))
-                .width(Length::Units(28)),
+                .height(28)
+                .width(28),
         )
         .on_press(Message::ControlEvent(ControlEvent::Play))
     };
 
     let duration_text = widget::container(widget::text(format!(
         "{} / {}",
-        to_hhmmss(position),
-        to_hhmmss(duration)
+        secs_to_hhmmss(position),
+        secs_to_hhmmss(duration)
     )))
     .padding([0, 5]);
 
-    let volume = if let Some(player) = &state.player {
+    let volume = if let Some(player) = player {
         player.get_volume()
     } else {
         1.0
@@ -64,27 +65,27 @@ pub fn controls(state: &State) -> Element {
         svgs::muted_svg()
     };
 
-    let volume_button = if let Some(player) = &state.player {
+    let volume_button = if let Some(player) = player {
         if !player.muted() {
             widget::Button::new(
                 widget::svg(volume_svg)
-                    .height(Length::Units(28))
-                    .width(Length::Units(28)),
+                    .height(28)
+                    .width(28),
             )
             .on_press(Message::ControlEvent(ControlEvent::ToggleMute))
         } else {
             widget::Button::new(
                 widget::svg(svgs::muted_svg())
-                    .height(Length::Units(28))
-                    .width(Length::Units(28)),
+                    .height(28)
+                    .width(28),
             )
             .on_press(Message::ControlEvent(ControlEvent::ToggleMute))
         }
     } else {
         widget::Button::new(
             widget::svg(volume_svg)
-                .height(Length::Units(28))
-                .width(Length::Units(28)),
+                .height(28)
+                .width(28),
         )
         .on_press(Message::ControlEvent(ControlEvent::ToggleMute))
     };
@@ -95,7 +96,7 @@ pub fn controls(state: &State) -> Element {
         })
         .style(theme::Slider::Volume)
         .step(0.05)
-        .width(Length::Units(80)),
+        .width(80),
     )
     .padding([0, 5]);
 
@@ -129,24 +130,12 @@ pub fn controls(state: &State) -> Element {
         }
     }))
     .padding(Padding {
-        top: 0,
-        right: 10,
-        left: 10,
-        bottom: 5,
+        top: 0.0,
+        right: 10.0,
+        left: 10.0,
+        bottom: 5.0,
     })
-    .height(Length::Units(60))
+    .height(60)
     .width(Length::Fill)
     .into()
-}
-
-fn to_hhmmss(seconds: u64) -> String {
-    let (hours, seconds) = (seconds / 3600, seconds % 3600);
-    let (minutes, seconds) = (seconds / 60, seconds % 60);
-    if hours > 0 {
-        format!("{}:{:02}:{:02}", hours, minutes, seconds)
-    } else if minutes > 1 {
-        format!("{}:{:02}", minutes, seconds)
-    } else {
-        format!("0:{:02}", seconds)
-    }
 }
