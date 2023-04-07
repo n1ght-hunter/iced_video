@@ -6,7 +6,7 @@ use crate::state::State;
 use super::Message;
 
 pub fn control_event(state: &mut State, event: ControlEvent) -> iced::Command<Message> {
-    if let Some(player) = state.player_handler.get_player_mut("main player".into()) {
+    if let Some(player) = state.player_handler.get_player_mut("main player") {
         match event {
             ControlEvent::Play => player.set_paused_state(false),
             ControlEvent::Pause => player.set_paused_state(true),

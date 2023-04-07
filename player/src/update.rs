@@ -31,7 +31,7 @@ pub fn update(state: &mut State, message: Message) -> iced::Command<Message> {
         Message::None(_) => (),
         Message::MenuEvent(event) => return menu_event(state, event),
         Message::SetUri(uri) => {
-            if let Some(player) = &mut state.player_handler.get_player_mut("main player".into()) {
+            if let Some(player) = &mut state.player_handler.get_player_mut("main player") {
                 player.set_source(uri).unwrap();
             }
         }
