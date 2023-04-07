@@ -3,7 +3,7 @@ use iced::{
     widget::{self, container, image, text},
     Application, Command, Element,
 };
-use video_player::{
+use iced_video::{
     iced_subscription::PlayerMessage,
     video_handler::PlayerHandler,
     video_settings::VideoSettings,

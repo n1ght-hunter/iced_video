@@ -1,4 +1,4 @@
-use video_player::{iced_subscription::video_subscription, player::VideoSettings};
+use iced_video::{iced_subscription::video_subscription, player::VideoSettings};
 
 use crate::{update::Message, State};
 

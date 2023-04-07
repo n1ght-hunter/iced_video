@@ -1,5 +1,5 @@
 use iced::Command;
-use video_player::viewer::ControlEvent;
+use iced_video::viewer::ControlEvent;
 
 use crate::state::State;
 

@@ -22,7 +22,7 @@ pub enum ControlEvent {
     Released,
 }
 
-/// a viewer fuction to make an over easyliy 
+/// a viewer fuction to make an over easyliy
 pub fn video_view<'a, Message, Renderer, F>(
     player: &'a VideoPlayer,
     frame: Option<&'a iced_native::image::Handle>,
@@ -52,8 +52,8 @@ where
 
     let image = if let Some(handle) = frame {
         iced::widget::image(handle.clone())
-            .height(Length::Units(i_height))
-            .width(Length::Units(i_width))
+            .height(i_height)
+            .width(i_width)
     } else {
         iced::widget::image(iced_native::image::Handle::from_pixels(0, 0, vec![]))
     };
@@ -65,24 +65,20 @@ where
         player.position().as_secs()
     };
 
-    let play_pause = if !player.playing()  {
-        widget::Button::new(
-            svg(svgs::play_svg())
-                .height(Length::Units(28))
-                .width(Length::Units(28)),
-        )
-        .on_press(on_event(ControlEvent::Play).clone())
+    let play_pause = if player.paused() {
+        widget::Button::new(svg(svgs::play_svg()).height(28).width(28))
+            .on_press(on_event(ControlEvent::Play).clone())
     } else {
-        widget::Button::new(
-            svg(svgs::pause_svg())
-                .height(Length::Units(28))
-                .width(Length::Units(28)),
-        )
-        // .style(theme::Button::Transparent)
-        .on_press(on_event(ControlEvent::Pause).clone())
+        widget::Button::new(svg(svgs::pause_svg()).height(28).width(28))
+            // .style(theme::Button::Transparent)
+            .on_press(on_event(ControlEvent::Pause).clone())
     };
 
-    let duration_text = text(format!("{} / {}", secs_to_hhmmss(position), secs_to_hhmmss(duration)));
+    let duration_text = text(format!(
+        "{} / {}",
+        secs_to_hhmmss(position),
+        secs_to_hhmmss(duration)
+    ));
 
     let volume = player.get_volume();
     let volume_svg = if volume > 0.66 {
@@ -96,26 +92,18 @@ where
     };
 
     let volume_button = if !player.muted() {
-        widget::Button::new(
-            svg(volume_svg)
-                .height(Length::Units(28))
-                .width(Length::Units(28)),
-        )
-        .on_press(on_event(ControlEvent::ToggleMute).clone())
+        widget::Button::new(svg(volume_svg).height(28).width(28))
+            .on_press(on_event(ControlEvent::ToggleMute).clone())
     } else {
-        widget::Button::new(
-            svg(svgs::muted_svg())
-                .height(Length::Units(28))
-                .width(Length::Units(28)),
-        )
-        .on_press(on_event(ControlEvent::ToggleMute).clone())
+        widget::Button::new(svg(svgs::muted_svg()).height(28).width(28))
+            .on_press(on_event(ControlEvent::ToggleMute).clone())
     };
 
     let volume_slider = widget::Slider::new(0.0..=1.0, volume, |v| {
         on_event(ControlEvent::Volume(v).clone())
     })
     .step(0.05)
-    .width(Length::Units(80));
+    .width(80);
 
     let seek_slider = widget::Slider::new(
         0.0..=duration.to_owned() as f64,
@@ -129,23 +117,17 @@ where
         seek_slider,
         widget::row![play_pause, duration_text, volume_button, volume_slider]
             .width(Length::Fill)
-            .height(Length::Units(60))
+            .height(60)
             .align_items(Alignment::Center)
     ])
     .align_y(Vertical::Bottom)
     .align_x(Horizontal::Left)
-    .width(Length::Units(*width))
-    .height(Length::Units(*height));
+    .width(*width)
+    .height(*height);
 
-    let content = Overlay::new(
-        container(image)
-            .width(Length::Units(*width))
-            .height(Length::Units(*height)),
-        orverlay,
-    );
+    let content = Overlay::new(container(image).width(*width).height(*height), orverlay);
     container(content).into()
 }
-
 
 fn secs_to_hhmmss(secs: u64) -> String {
     let hours = secs / 3600;

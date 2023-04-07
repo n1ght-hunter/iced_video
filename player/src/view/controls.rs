@@ -1,5 +1,5 @@
 use iced::{color, widget, Alignment, Background, Color, Length, Padding};
-use video_player::{svgs, viewer::ControlEvent};
+use iced_video::{svgs, viewer::ControlEvent};
 
 use crate::{state::State, theme, update::Message, Element};
 
