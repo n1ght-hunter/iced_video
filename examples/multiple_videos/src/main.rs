@@ -3,7 +3,7 @@ use iced::{
     widget::{self, button, container, scrollable},
     Application, Command, Length,
 };
-use video_player::{
+use iced_video::{
     iced_subscription::PlayerMessage, video_handler::PlayerHandler, video_settings::VideoSettings,
     viewer::ControlEvent,
 };

@@ -8,20 +8,20 @@ version = "0.1.0"
 [dependencies]
 anyhow = "1"
 derive_more = "*"
-glib = "0.16.3"
-gst = {package = "gstreamer", version = "0.19.3"}
-gst_app = {package = "gstreamer-app", version = "0.19.2"}
-gst_video = {package = "gstreamer-video", version = "0.19.3"}
+glib = "0.17"
+gst = {package = "gstreamer", version = "0.20"}
+gst_app = {package = "gstreamer-app", version = "0.20"}
+gst_video = {package = "gstreamer-video", version = "0.20"}
 log = "0.4"
 tokio = {version = "1.24.2", features = ["sync"]}
 
 [dependencies.iced]
 features = ["tokio", "debug", "image", "svg"]
-version = "0.6"
+version = "0.8"
 [dependencies.iced_futures]
-version = "0.5"
+version = "0.6"
 [dependencies.iced_native]
-version = "0.7"
+version = "0.9"
 
 [workspace]
 members = [

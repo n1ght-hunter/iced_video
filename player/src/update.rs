@@ -2,7 +2,7 @@ pub mod menu_event;
 pub mod player_event;
 
 use iced::Command;
-use video_player::{iced_subscription::SubMSG, viewer::ControlEvent};
+use iced_video::{iced_subscription::SubMSG, viewer::ControlEvent};
 
 use crate::State;
 

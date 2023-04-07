@@ -1,5 +1,5 @@
 use iced::{widget::image, Command};
-use video_player::player::VideoPlayer;
+use iced_video::player::VideoPlayer;
 
 use crate::update::Message;
 
@@ -14,6 +14,7 @@ impl State {
     pub fn new() -> (State, Command<Message>) {
         (
             State {
+                player_handler
                 player: None,
                 frame: None,
                 seek: None,
