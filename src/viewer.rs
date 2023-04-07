@@ -2,7 +2,7 @@
 //! displays the video and the overlay
 use iced::{
     alignment::{Horizontal, Vertical},
-    widget::{self, column, container, row, svg, text},
+    widget::{self, container, svg, text},
     Alignment, Length,
 };
 

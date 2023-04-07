@@ -1,5 +1,5 @@
-use iced::{widget::image, Command};
-use iced_video::{player::VideoPlayer, player_handler::PlayerHandler};
+use iced::{Command};
+use iced_video::{player_handler::PlayerHandler};
 
 use crate::update::Message;
 

@@ -3,7 +3,7 @@
 use gst::{
     prelude::Continue,
     traits::{ElementExt, PadExt},
-    FlowError, FlowSuccess, MessageView,
+    FlowError, FlowSuccess,
 };
 use gst_video::VideoFormat;
 use iced::{subscription, widget::image};

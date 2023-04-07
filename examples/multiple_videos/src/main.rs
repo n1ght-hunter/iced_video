@@ -1,7 +1,7 @@
 use iced::{
     executor,
     widget::{self, button, container, scrollable},
-    Application, Command, Length,
+    Application, Command,
 };
 use iced_video::{
     iced_subscription::PlayerMessage, player_handler::PlayerHandler, video_settings::VideoSettings,
@@ -66,7 +66,7 @@ impl Application for App {
     fn update(&mut self, message: Self::Message) -> iced::Command<Self::Message> {
         match message {
             Message::Video(event) => {
-                if let Some((player_id, message)) = self.player_handler.handle_event(event) {
+                if let Some((_player_id, message)) = self.player_handler.handle_event(event) {
                     println!("message: {:?}", message);
                 }
             }

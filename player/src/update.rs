@@ -23,7 +23,7 @@ pub enum Message {
 pub fn update(state: &mut State, message: Message) -> iced::Command<Message> {
     match message {
         Message::Video(event) => {
-            if let Some((player_id, message)) = state.player_handler.handle_event(event) {
+            if let Some((_player_id, message)) = state.player_handler.handle_event(event) {
                 println!("message: {:?}", message);
             }
         }

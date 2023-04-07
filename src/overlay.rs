@@ -176,7 +176,7 @@ where
         clipboard: &mut dyn Clipboard,
         shell: &mut Shell<'_, Message>,
     ) -> event::Status {
-        let content_bounds = layout.children().next().unwrap().bounds();
+        let _content_bounds = layout.children().next().unwrap().bounds();
 
         self.content.as_widget_mut().on_event(
             self.tree,
