@@ -10,10 +10,11 @@
 - automatic auto source selecting
 
 ### Known Issues:
-- cant close iced application
-- veiwer not resizing to match image
 - slider goes to 0 after releasing when using seek
 - styles bad
+- set url does not change the source
+- when a video finishes it gstreamer panics
+- messages dont seem to be working
 ### Road Map
 
 - build custom widget to display opengl textures if possible (faster then getting and displaying RGB)
