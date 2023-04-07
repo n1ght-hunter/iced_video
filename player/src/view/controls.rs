@@ -4,7 +4,7 @@ use iced_video::{helpers::helper_functions::secs_to_hhmmss, svgs, viewer::Contro
 use crate::{state::State, theme, update::Message, Element};
 
 pub fn controls(state: &State) -> Element {
-    let player = state.player_handler.get_player("main player".into());
+    let player = state.player_handler.get_player("main player");
     let duration = if let Some(p) = player {
         p.duration().as_secs()
     } else {
