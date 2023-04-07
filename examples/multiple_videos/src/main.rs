@@ -4,7 +4,7 @@ use iced::{
     Application, Command, Length,
 };
 use iced_video::{
-    iced_subscription::PlayerMessage, video_handler::PlayerHandler, video_settings::VideoSettings,
+    iced_subscription::PlayerMessage, player_handler::PlayerHandler, video_settings::VideoSettings,
     viewer::ControlEvent,
 };
 
@@ -106,8 +106,8 @@ impl Application for App {
             .map(|(id, player, handle)| {
                 let image = button(
                     iced::widget::image((*handle).clone())
-                        .height(Length::Units(480))
-                        .width(Length::Units(480)),
+                        .height(480)
+                        .width(480),
                 )
                 .on_press(Message::ControlEvent(
                     (*id).clone(),

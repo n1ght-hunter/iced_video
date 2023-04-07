@@ -4,7 +4,7 @@ name = "basic_video_player"
 version = "0.1.0"
 
 [dependencies]
-iced_video = {path = "../../", package = "iced_video"}
+iced_video = {path = "../../"}
 
 [dependencies.iced]
 features = ["tokio", "debug", "image", "svg", "canvas"]

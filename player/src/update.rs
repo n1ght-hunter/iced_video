@@ -2,7 +2,7 @@ pub mod menu_event;
 pub mod player_event;
 
 use iced::Command;
-use iced_video::{iced_subscription::SubMSG, viewer::ControlEvent};
+use iced_video::{iced_subscription::PlayerMessage, viewer::ControlEvent};
 
 use crate::State;
 
@@ -13,7 +13,7 @@ use self::{
 
 #[derive(Clone, Debug)]
 pub enum Message {
-    Video(SubMSG),
+    Video(PlayerMessage),
     ControlEvent(ControlEvent),
     MenuEvent(MenuEvent),
     SetUri(String),
@@ -22,23 +22,16 @@ pub enum Message {
 
 pub fn update(state: &mut State, message: Message) -> iced::Command<Message> {
     match message {
-        Message::Video(event) => match event {
-            SubMSG::Image(_id, image) => {
-                state.frame = Some(image);
-            }
-            SubMSG::Message(_id, message) => {
+        Message::Video(event) => {
+            if let Some((player_id, message)) = state.player_handler.handle_event(event) {
                 println!("message: {:?}", message);
-                match message {
-                    _ => (),
-                }
             }
-            SubMSG::Player(_id, player) => state.player = Some(player),
-        },
+        }
         Message::ControlEvent(event) => return control_event(state, event),
         Message::None(_) => (),
         Message::MenuEvent(event) => return menu_event(state, event),
         Message::SetUri(uri) => {
-            if let Some(player) = &mut state.player {
+            if let Some(player) = &mut state.player_handler.get_player_mut("main player".into()) {
                 player.set_source(uri).unwrap();
             }
         }

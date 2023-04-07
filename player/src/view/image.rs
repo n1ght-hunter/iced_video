@@ -4,7 +4,7 @@ use iced_video::viewer::ControlEvent;
 use crate::{state::State, theme, update::Message, Element};
 
 pub fn image(state: &State) -> Element {
-    let image = if let Some(handle) = &state.frame {
+    let image = if let Some(handle) = state.player_handler.get_frame("main player".into()) {
         iced::widget::image(handle.clone())
             .height(Length::Fill)
             .width(Length::Fill)
@@ -16,8 +16,8 @@ pub fn image(state: &State) -> Element {
 
     widget::container(
         widget::button(image)
-            .on_press(if let Some(player) = &state.player {
-                if !player.playing() {
+            .on_press(if let Some(player) = state.player_handler.get_player("main player".into()) {
+                if player.paused() {
                     Message::ControlEvent(ControlEvent::Play)
                 } else {
                     Message::ControlEvent(ControlEvent::Pause)
