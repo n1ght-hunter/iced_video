@@ -3,10 +3,7 @@ use iced::{
     widget::{self, button, container, scrollable},
     Application, Command,
 };
-use iced_video::{
-    iced_subscription::PlayerMessage, player_handler::PlayerHandler, video_settings::VideoSettings,
-    viewer::ControlEvent,
-};
+use iced_video::{player_handler::PlayerHandler, viewer::ControlEvent, PlayerMessage, PlayerBuilder, PlayerBackend};
 
 fn main() {
     // uncomment to see debug messages from gstreamer
@@ -44,7 +41,7 @@ impl Application for App {
         ];
 
         urls.into_iter()
-            .for_each(|uri| player_handler.start_player(VideoSettings::new(uri).set_uri(uri)));
+            .for_each(|uri| player_handler.start_player(PlayerBuilder::new(uri).set_uri(uri)));
 
         (
             App {
@@ -74,10 +71,10 @@ impl Application for App {
             Message::ControlEvent(uri, event) => {
                 if let Some(player) = self.player_handler.get_player_mut(&uri) {
                     match event {
-                        ControlEvent::Play => player.set_paused_state(false),
-                        ControlEvent::Pause => player.set_paused_state(true),
+                        ControlEvent::Play => player.set_paused(false).unwrap_or_else(|err| println!("Error seting paused state: {:?}", err)),
+                        ControlEvent::Pause => player.set_paused(true).unwrap_or_else(|err| println!("Error seting paused state: {:?}", err)),
                         ControlEvent::ToggleMute => {
-                            if player.muted() {
+                            if player.get_mute() {
                                 player.set_muted(false)
                             } else {
                                 player.set_muted(true)
@@ -88,7 +85,7 @@ impl Application for App {
                             self.seek = Some(p as u64);
                         }
                         ControlEvent::Released => {
-                            player.seek(self.seek.unwrap()).unwrap_or_else(|_| ());
+                            player.seek(self.seek.unwrap()).unwrap_or_else(|err| println!("Error seeking: {:?}", err));
                             self.seek = None;
                         }
                     }
@@ -111,7 +108,7 @@ impl Application for App {
                 )
                 .on_press(Message::ControlEvent(
                     (*id).clone(),
-                    if player.paused() {
+                    if player.get_paused() {
                         ControlEvent::Play
                     } else {
                         ControlEvent::Pause

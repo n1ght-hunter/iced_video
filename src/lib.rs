@@ -16,17 +16,25 @@
     clippy::from_over_into,
     clippy::needless_borrow,
     clippy::new_without_default,
-    clippy::useless_conversion
+    clippy::useless_conversion,
+    unsafe_code
 )]
-#![forbid(rust_2018_idioms, unsafe_code)]
+#![forbid(rust_2018_idioms)]
 #![allow(clippy::inherent_to_string, clippy::type_complexity)]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
+mod backends;
 pub mod helpers;
 pub mod iced_subscription;
 pub mod overlay;
-pub mod player;
 pub mod player_handler;
-pub mod svgs;
-pub mod video_settings;
+mod player_builder;
+pub use player_builder::PlayerBuilder;
 pub mod viewer;
+pub use helpers::player_backend::PlayerBackend;
+
+#[cfg(all(feature = "gstreamer", not(target_arch = "wasm32")))]
+pub use backends::gstreamer::GstreamerBackend as Player;
+
+#[cfg(all(feature = "gstreamer", not(target_arch = "wasm32")))]
+pub use backends::gstreamer::GstreamerMessage as PlayerMessage;

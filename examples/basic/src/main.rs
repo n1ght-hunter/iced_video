@@ -4,10 +4,9 @@ use iced::{
     Application, Command, Element,
 };
 use iced_video::{
-    iced_subscription::PlayerMessage,
     player_handler::PlayerHandler,
-    video_settings::VideoSettings,
     viewer::{video_view, ControlEvent},
+    PlayerMessage, PlayerBuilder, PlayerBackend,
 };
 
 fn main() {
@@ -41,7 +40,7 @@ impl Application for App {
         let mut player_handler = PlayerHandler::default();
         let url =
             "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
-        player_handler.start_player(VideoSettings::new(url).set_auto_start(true).set_uri(url));
+        player_handler.start_player(PlayerBuilder::new(url).set_auto_start(true).set_uri(url));
 
         (
             App {
@@ -71,10 +70,10 @@ impl Application for App {
             Message::ControlEvent(event) => {
                 if let Some(player) = self.player_handler.get_player_mut(&self.id) {
                     match event {
-                        ControlEvent::Play => player.set_paused_state(false),
-                        ControlEvent::Pause => player.set_paused_state(true),
+                        ControlEvent::Play => player.set_paused(false).unwrap_or_else(|err| println!("Error seting paused state: {:?}", err)),
+                        ControlEvent::Pause => player.set_paused(true).unwrap_or_else(|err| println!("Error seting paused state: {:?}", err)),
                         ControlEvent::ToggleMute => {
-                            if player.muted() {
+                            if player.get_mute() {
                                 player.set_muted(false)
                             } else {
                                 player.set_muted(true)
@@ -85,7 +84,7 @@ impl Application for App {
                             self.seek = Some(p as u64);
                         }
                         ControlEvent::Released => {
-                            player.seek(self.seek.unwrap()).unwrap_or_else(|_| ());
+                            player.seek(self.seek.unwrap()).unwrap_or_else(|err| println!("Error seeking: {:?}", err));
                             self.seek = None;
                         }
                     }
