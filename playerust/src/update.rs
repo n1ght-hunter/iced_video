@@ -1,12 +1,7 @@
 pub mod menu_event;
 pub mod player_event;
 use iced::Command;
-use iced_video::{
-    gstreamer::{DateTime, MessageView},
-    tag_convert::TaglistToTags,
-    viewer::ControlEvent,
-    PlayerBackend, PlayerMessage,
-};
+use iced_video::{viewer::ControlEvent, PlayerBackend, PlayerMessage};
 
 use crate::{helpers::component_trait::Update, State};
 

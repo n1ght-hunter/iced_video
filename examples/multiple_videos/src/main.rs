@@ -3,7 +3,10 @@ use iced::{
     widget::{self, button, container, scrollable},
     Application, Command,
 };
-use iced_video::{player_handler::PlayerHandler, viewer::ControlEvent, PlayerMessage, PlayerBuilder, PlayerBackend};
+use iced_video::{
+    player_handler::PlayerHandler, viewer::ControlEvent, PlayerBackend, PlayerBuilder,
+    PlayerMessage,
+};
 
 fn main() {
     // uncomment to see debug messages from gstreamer
@@ -71,8 +74,12 @@ impl Application for App {
             Message::ControlEvent(uri, event) => {
                 if let Some(player) = self.player_handler.get_player_mut(&uri) {
                     match event {
-                        ControlEvent::Play => player.set_paused(false).unwrap_or_else(|err| println!("Error seting paused state: {:?}", err)),
-                        ControlEvent::Pause => player.set_paused(true).unwrap_or_else(|err| println!("Error seting paused state: {:?}", err)),
+                        ControlEvent::Play => player
+                            .set_paused(false)
+                            .unwrap_or_else(|err| println!("Error seting paused state: {:?}", err)),
+                        ControlEvent::Pause => player
+                            .set_paused(true)
+                            .unwrap_or_else(|err| println!("Error seting paused state: {:?}", err)),
                         ControlEvent::ToggleMute => {
                             if player.get_mute() {
                                 player.set_muted(false)
@@ -85,7 +92,9 @@ impl Application for App {
                             self.seek = Some(p as u64);
                         }
                         ControlEvent::Released => {
-                            player.seek(self.seek.unwrap()).unwrap_or_else(|err| println!("Error seeking: {:?}", err));
+                            player
+                                .seek(self.seek.unwrap())
+                                .unwrap_or_else(|err| println!("Error seeking: {:?}", err));
                             self.seek = None;
                         }
                     }

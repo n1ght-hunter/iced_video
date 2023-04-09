@@ -1,5 +1,9 @@
 use iced::{color, widget, Alignment, Background, Color, Length, Padding};
-use iced_video::{helpers::{helper_functions::secs_to_hhmmss, svgs}, viewer::ControlEvent, PlayerBackend};
+use iced_video::{
+    helpers::{helper_functions::secs_to_hhmmss, svgs},
+    viewer::ControlEvent,
+    PlayerBackend,
+};
 
 use crate::{state::State, theme, update::Message, Element};
 

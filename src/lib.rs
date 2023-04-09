@@ -26,8 +26,8 @@
 mod backends;
 pub mod helpers;
 pub mod overlay;
-pub mod player_handler;
 mod player_builder;
+pub mod player_handler;
 pub use player_builder::PlayerBuilder;
 pub mod viewer;
 pub use helpers::player_backend::PlayerBackend;
