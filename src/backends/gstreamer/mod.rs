@@ -1,7 +1,7 @@
 mod error;
 mod unsafe_functions;
 pub use error::GstreamerError;
-use glib::{Cast, Continue, ObjectExt};
+use glib::{Cast, ObjectExt};
 use gst::{
     prelude::{ElementExtManual, GstBinExtManual},
     traits::{ElementExt, PadExt},
@@ -47,14 +47,16 @@ pub enum GstreamerMessage {
 
 impl GstreamerBackend {
     /// Creates a gstreamer player.
-    pub fn new(settings: PlayerBuilder) -> (GstreamerMessage, mpsc::UnboundedReceiver<GstreamerMessage>) {
+    pub fn new(
+        settings: PlayerBuilder,
+    ) -> (GstreamerMessage, mpsc::UnboundedReceiver<GstreamerMessage>) {
         let (sender, receiver) = mpsc::unbounded_channel::<GstreamerMessage>();
         let sender1 = sender.clone();
-        let sender2 = sender.clone();
+        let _sender2 = sender.clone();
         let id = settings.id.clone();
         let id1 = settings.id.clone();
         let id2 = settings.id.clone();
-        let id3 = settings.id.clone();
+        let _id3 = settings.id.clone();
         let player = Self::build_player(
             settings,
             move |sink: &gst_app::AppSink| {
@@ -160,7 +162,7 @@ impl GstreamerBackend {
             .bus()
             .expect("Pipeline without bus. Shouldn't happen!");
 
-        let id = video_settings.id.clone();
+        let _id = video_settings.id.clone();
 
         bus.set_sync_handler(message_callback);
 
@@ -268,7 +270,7 @@ impl PlayerBackend for GstreamerBackend {
         self.source.property("mute")
     }
 
-    fn set_looping(&mut self, looping: bool) {
+    fn set_looping(&mut self, _looping: bool) {
         todo!()
     }
 
