@@ -1,9 +1,5 @@
 use iced::{color, widget, Alignment, Background, Color, Length, Padding};
-use iced_video::{
-    helpers::{helper_functions::secs_to_hhmmss, svgs},
-    viewer::ControlEvent,
-    PlayerBackend,
-};
+use iced_video::{helpers::{helper_functions::secs_to_hhmmss, svgs}, viewer::ControlEvent, PlayerBackend};
 
 use crate::{state::State, theme, update::Message, Element};
 
@@ -58,7 +54,7 @@ pub fn controls(state: &State) -> Element {
     };
 
     let volume_button = if let Some(player) = player {
-        if !player.get_muted() {
+        if !player.get_mute() {
             widget::Button::new(widget::svg(volume_svg).height(28).width(28))
                 .on_press(Message::ControlEvent(ControlEvent::ToggleMute))
         } else {

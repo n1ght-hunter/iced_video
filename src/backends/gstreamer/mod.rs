@@ -1,34 +1,29 @@
 mod error;
-mod extra_functions;
-pub mod tag_convert;
 mod unsafe_functions;
-use std::time::Duration;
-
 pub use error::GstreamerError;
+use glib::{Cast, Continue, ObjectExt};
 use gst::{
-    glib::{Cast, ObjectExt},
     prelude::{ElementExtManual, GstBinExtManual},
     traits::{ElementExt, PadExt},
-    BusSyncReply, FlowError, FlowSuccess,
+    FlowError, FlowSuccess,
 };
 use iced::widget::image;
 use log::{debug, info};
 use tokio::sync::mpsc;
 use unsafe_functions::is_initialized;
 
-use crate::{backends::gstreamer::extra_functions::send_seek_event, PlayerBackend, PlayerBuilder};
+use crate::{PlayerBackend, PlayerBuilder};
 
 /// A gstreamer backend for the player.
 #[derive(Debug, Clone)]
 pub struct GstreamerBackend {
-    playbin: gst::Element,
+    source: gst::Element,
     bin: gst::Bin,
     ghost_pad: gst::GhostPad,
 
     settings: crate::PlayerBuilder,
 
     video_details: Option<VideoDetails>,
-    playback_rate: f64,
 }
 
 /// stores some details about the video.
@@ -52,14 +47,12 @@ pub enum GstreamerMessage {
 
 impl GstreamerBackend {
     /// Creates a gstreamer player.
-    pub fn new(settings: PlayerBuilder) -> mpsc::UnboundedReceiver<GstreamerMessage> {
-        let (sender, receiver) = mpsc::unbounded_channel::<GstreamerMessage>();
+    pub fn new(settings: PlayerBuilder) -> (GstreamerMessage, mpsc::Receiver<GstreamerMessage>) {
+        let (sender, receiver) = mpsc::channel::<GstreamerMessage>(20);
         let sender1 = sender.clone();
-        let sender2 = sender.clone();
         let id = settings.id.clone();
         let id1 = settings.id.clone();
         let id2 = settings.id.clone();
-        let _id3 = settings.id.clone();
         let player = Self::build_player(
             settings,
             move |sink: &gst_app::AppSink| {
@@ -74,7 +67,7 @@ impl GstreamerBackend {
                 let width = s.get::<i32>("width").map_err(|_| FlowError::Error)?;
                 let height = s.get::<i32>("height").map_err(|_| FlowError::Error)?;
 
-                let res = sender.send(GstreamerMessage::Image(
+                let res = sender.blocking_send(GstreamerMessage::Image(
                     id1.clone(),
                     image::Handle::from_pixels(
                         width as u32,
@@ -89,20 +82,21 @@ impl GstreamerBackend {
 
                 Ok(FlowSuccess::Ok)
             },
-            move |_, msg| {
-                let res = sender1.send(GstreamerMessage::Message(id2.clone(), msg.clone()));
+            move |_bus, msg| {
+                println!("Message: ");
+                let res = sender1.blocking_send(GstreamerMessage::Message(id2.clone(), msg.copy()));
 
                 if res.is_err() {
-                    log::error!("Error sending message");
+                    return Continue(false);
                 }
-                BusSyncReply::Pass
+
+                // Tell the mainloop to continue executing this callback.
+                Continue(true)
             },
         )
         .unwrap();
-        if let Err(err) = sender2.send(GstreamerMessage::Player(id, player)) {
-            log::error!("Error sending player: {}", err);
-        };
-         receiver
+
+        (GstreamerMessage::Player(id, player), receiver)
     }
 
     /// Builds the player.
@@ -114,7 +108,7 @@ impl GstreamerBackend {
     where
         Self: Sized,
         C: FnMut(&gst_app::AppSink) -> Result<gst::FlowSuccess, gst::FlowError> + Send + 'static,
-        F: Fn(&gst::Bus, &gst::Message) -> BusSyncReply + Send + Sync + 'static,
+        F: FnMut(&gst::Bus, &gst::Message) -> Continue + Send + 'static,
     {
         info!("Initializing Player");
 
@@ -123,9 +117,9 @@ impl GstreamerBackend {
             gst::init()?;
         }
 
-        let playbin = gst::ElementFactory::make("playbin3").build()?;
+        let source = gst::ElementFactory::make("playbin3").build()?;
 
-        playbin.set_property("instant-uri", true);
+        source.set_property("instant-uri", true);
 
         let video_convert = gst::ElementFactory::make("videoconvert").build()?;
 
@@ -159,14 +153,16 @@ impl GstreamerBackend {
                 .new_sample(frame_callback)
                 .build(),
         );
-
-        let bus = playbin
+        // callback for bus messages
+        // sends messages to subscription
+        let bus = source
             .bus()
             .expect("Pipeline without bus. Shouldn't happen!");
-
-        let _id = video_settings.id.clone();
-
-        bus.set_sync_handler(message_callback);
+     
+        let _ = bus.add_watch(|bus, msg| {
+            println!("Message: ");
+            Continue(true)
+        })?;
 
         debug!("Create ghost pad");
         let pad = video_convert
@@ -177,12 +173,11 @@ impl GstreamerBackend {
         bin.add_pad(&ghost_pad)?;
 
         let mut backend = GstreamerBackend {
-            playbin,
+            source,
             bin,
             ghost_pad,
             settings: video_settings,
             video_details: None,
-            playback_rate: 1.0,
         };
 
         if let Some(url) = backend.settings.uri.clone() {
@@ -199,15 +194,15 @@ impl PlayerBackend for GstreamerBackend {
 
     fn set_source(&mut self, uri: &str) -> Result<(), Self::Error> {
         info!("Setting source to {}", uri);
-        self.playbin.set_property("uri", &uri);
+        self.source.set_property("uri", &uri);
 
-        self.playbin.set_property("video-sink", &self.bin);
+        self.source.set_property("video-sink", &self.bin);
 
-        let _ = self.playbin.set_state(gst::State::Playing)?;
+        let _ = self.source.set_state(gst::State::Playing)?;
 
         debug!("Waiting for decoder to get source capabilities");
         // wait for up to 5 seconds until the decoder gets the source capabilities
-        let _ = self.playbin.state(gst::ClockTime::from_seconds(5)).0?;
+        let _ = self.source.state(gst::ClockTime::from_seconds(5)).0?;
         let caps = self
             .ghost_pad
             .current_caps()
@@ -225,40 +220,37 @@ impl PlayerBackend for GstreamerBackend {
             framerate: framerate.numer() as f64 / framerate.denom() as f64,
         });
 
-        debug!("source capabilities: {:?}", self.video_details);
-
         if !self.settings.auto_start {
             debug!("auto start false setting state to paused");
-            let _ = self.playbin.set_state(gst::State::Paused)?;
+            let _ = self.source.set_state(gst::State::Paused)?;
         }
 
-        debug!("source set");
         Ok(())
     }
 
     fn get_source(&self) -> Option<String> {
-        self.playbin.property("current-uri")
+        self.source.property("current-uri")
     }
 
     fn set_volume(&mut self, volume: f64) {
         debug!("volume set to: {}", volume);
-        self.playbin.set_property("volume", &volume);
+        self.source.set_property("volume", &volume);
     }
 
     fn get_volume(&self) -> f64 {
-        self.playbin.property("volume")
+        self.source.property("volume")
     }
 
     fn set_muted(&mut self, mute: bool) {
         debug!("muted set to: {}", mute);
-        self.playbin.set_property("mute", &mute);
+        self.source.set_property("mute", &mute);
     }
 
-    fn get_muted(&self) -> bool {
-        self.playbin.property("mute")
+    fn get_mute(&self) -> bool {
+        self.source.property("mute")
     }
 
-    fn set_looping(&mut self, _looping: bool) {
+    fn set_looping(&mut self, looping: bool) {
         todo!()
     }
 
@@ -269,7 +261,7 @@ impl PlayerBackend for GstreamerBackend {
     fn set_paused(&mut self, paused: bool) -> Result<(), Self::Error> {
         debug!("set paused state to: {}", paused);
         let _ = self
-            .playbin
+            .source
             .set_state(if paused {
                 gst::State::Paused
             } else {
@@ -281,23 +273,22 @@ impl PlayerBackend for GstreamerBackend {
     }
 
     fn get_paused(&self) -> bool {
-        match self.playbin.state(None).1 {
+        match self.source.state(None).1 {
             gst::State::Playing => false,
             _ => true,
         }
     }
 
-    fn seek(&mut self, position: std::time::Duration) -> Result<(), Self::Error> {
-        let pos = position.as_nanos() as u64;
-        debug!("seeking to: {}", position.as_secs());
-        self.playbin
-            .seek_simple(gst::SeekFlags::FLUSH, pos * gst::ClockTime::NSECOND)?;
+    fn seek(&mut self, position: u64) -> Result<(), Self::Error> {
+        debug!("seeking to: {}", position);
+        self.source
+            .seek_simple(gst::SeekFlags::FLUSH, position * gst::ClockTime::SECOND)?;
         Ok(())
     }
 
     fn get_position(&self) -> std::time::Duration {
         std::time::Duration::from_nanos(
-            self.playbin
+            self.source
                 .query_position::<gst::ClockTime>()
                 .map_or(0, |pos| pos.nseconds()),
         )
@@ -305,62 +296,25 @@ impl PlayerBackend for GstreamerBackend {
 
     fn get_duration(&self) -> std::time::Duration {
         std::time::Duration::from_nanos(
-            self.playbin
+            self.source
                 .query_duration::<gst::ClockTime>()
                 .map_or(0, |pos| pos.nseconds()),
         )
     }
 
-    fn get_rate(&self) -> f64 {
-        self.playback_rate
-    }
-
-    fn next_frame(&mut self) -> Result<(), Self::Error> {
-        if let Some(video_sink) = self.playbin.property::<Option<gst::Element>>("video-sink") {
-            debug!("Stepping one frame");
-            // Send the event
-            let step =
-                gst::event::Step::new(gst::format::Buffers::ONE, self.playback_rate, true, false);
-            match video_sink.send_event(step) {
-                true => Ok(()),
-                false => Err("Failed to send seek event to the sink".into()),
-            }
-        } else {
-            Err("No video sink found".into())
-        }
-    }
-
-    fn previous_frame(&mut self) -> Result<(), Self::Error> {
-        if let Some(video_sink) = self.playbin.property::<Option<gst::Element>>("video-sink") {
-            debug!("Stepping one frame");
-            // Send the event
-            let step =
-                gst::event::Step::new(gst::format::Buffers::ONE, self.playback_rate, true, false);
-            match video_sink.send_event(step) {
-                true => Ok(()),
-                false => Err("Failed to send seek event to the sink".into()),
-            }
-        } else {
-            Err("No video sink found".into())
-        }
-    }
-
-    fn set_rate(&mut self, rate: f64) -> Result<(), Self::Error> {
-        debug!("set rate to: {}", rate);
-        self.playback_rate = rate;
-        send_seek_event(&self.playbin, rate)?;
-        Ok(())
+    fn get_bus(&self) -> &gst::Bus {
+        todo!()
     }
 
     fn exit(&mut self) -> Result<(), Self::Error> {
         debug!("exiting");
-        let _ = self.playbin.send_event(gst::event::Eos::new());
+        let _ = self.source.send_event(gst::event::Eos::new());
         Ok(())
     }
 
     fn restart_stream(&mut self) -> Result<(), Self::Error> {
         self.set_paused(false)?;
-        self.seek(Duration::ZERO)?;
+        self.seek(0)?;
         Ok(())
     }
 }

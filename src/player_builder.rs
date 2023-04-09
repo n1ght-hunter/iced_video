@@ -1,7 +1,5 @@
 //! VideoSettings is used to configure the player before it is created
 
-use iced::futures::SinkExt;
-
 use crate::{Player, PlayerMessage};
 
 /// setting when creating a player
@@ -38,25 +36,9 @@ impl PlayerBuilder {
     }
 
     /// build a player with the settings
-    pub fn build(self) -> iced::Subscription<PlayerMessage> {
+    pub fn build(self) -> (PlayerMessage, tokio::sync::mpsc::Receiver<PlayerMessage>) {
         if cfg!(feature = "gstreamer") {
-            iced::subscription::channel(self.id.clone(), 100, move |mut sender| {
-                let settings = self.clone();
-                async move {
-                    let mut res = Player::new(settings);
-                    loop {
-                        let message = res.recv().await;
-                        match message {
-                            Some(message) => {
-                                let _ = sender.send(message).await;
-                            }
-                            None => {
-                                iced_futures::futures::pending!()
-                            }
-                        }
-                    }
-                }
-            })
+            Player::new(self)
         } else {
             panic!("No backend selected");
         }

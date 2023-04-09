@@ -24,25 +24,13 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
 mod backends;
-mod player_builder;
-
 pub mod helpers;
 pub mod overlay;
 pub mod player_handler;
-pub mod viewer;
-
-pub use helpers::player_backend::PlayerBackend;
+mod player_builder;
 pub use player_builder::PlayerBuilder;
-
-#[cfg(all(feature = "gstreamer", not(target_arch = "wasm32")))]
-pub use backends::gstreamer::tag_convert;
-
-/// gstreamer modules that are only available when the gstreamer feature is enabled
-#[cfg(all(feature = "gstreamer", not(target_arch = "wasm32")))]
-pub mod gstreamer {
-
-    pub use gst::{MessageView, DateTime};
-}
+pub mod viewer;
+pub use helpers::player_backend::PlayerBackend;
 
 #[cfg(all(feature = "gstreamer", not(target_arch = "wasm32")))]
 pub use backends::gstreamer::GstreamerBackend as Player;

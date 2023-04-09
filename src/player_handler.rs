@@ -1,10 +1,11 @@
 //! A struct that handles all the players and images
 //! offers a high level api to interact with the players
 
-use iced_native::image;
-
 use crate::{Player, PlayerBuilder, PlayerMessage};
+use iced::widget::image;
 use std::collections::HashMap;
+
+use crate::iced_subscription;
 
 /// A struct that handles all the players and images
 #[derive(Debug)]
