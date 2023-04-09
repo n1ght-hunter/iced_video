@@ -9,7 +9,7 @@ use crate::{PlayerBuilder, PlayerMessage};
 #[derive(Debug)]
 enum PlayerSubscription {
     Starting(PlayerBuilder),
-    Next(mpsc::Receiver<PlayerMessage>),
+    Next(mpsc::UnboundedReceiver<PlayerMessage>),
 }
 
 /// The subscription for the video player.

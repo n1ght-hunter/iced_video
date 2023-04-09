@@ -47,12 +47,14 @@ pub enum GstreamerMessage {
 
 impl GstreamerBackend {
     /// Creates a gstreamer player.
-    pub fn new(settings: PlayerBuilder) -> (GstreamerMessage, mpsc::Receiver<GstreamerMessage>) {
-        let (sender, receiver) = mpsc::channel::<GstreamerMessage>(20);
+    pub fn new(settings: PlayerBuilder) -> (GstreamerMessage, mpsc::UnboundedReceiver<GstreamerMessage>) {
+        let (sender, receiver) = mpsc::unbounded_channel::<GstreamerMessage>();
         let sender1 = sender.clone();
+        let sender2 = sender.clone();
         let id = settings.id.clone();
         let id1 = settings.id.clone();
         let id2 = settings.id.clone();
+        let id3 = settings.id.clone();
         let player = Self::build_player(
             settings,
             move |sink: &gst_app::AppSink| {
@@ -67,7 +69,7 @@ impl GstreamerBackend {
                 let width = s.get::<i32>("width").map_err(|_| FlowError::Error)?;
                 let height = s.get::<i32>("height").map_err(|_| FlowError::Error)?;
 
-                let res = sender.blocking_send(GstreamerMessage::Image(
+                let res = sender.send(GstreamerMessage::Image(
                     id1.clone(),
                     image::Handle::from_pixels(
                         width as u32,
@@ -83,7 +85,13 @@ impl GstreamerBackend {
                 Ok(FlowSuccess::Ok)
             },
             move |_, msg| {
-                let _ = sender1.blocking_send(GstreamerMessage::Message(id2.clone(), msg.copy()));
+                println!("Got message {:?}", msg);
+
+                let res = sender1.send(GstreamerMessage::Message(id2.clone(), msg.clone()));
+
+                if res.is_err() {
+                    eprintln!("Error sending message");
+                }
                 BusSyncReply::Pass
             },
         )
@@ -152,7 +160,28 @@ impl GstreamerBackend {
             .bus()
             .expect("Pipeline without bus. Shouldn't happen!");
 
+        let id = video_settings.id.clone();
+
         bus.set_sync_handler(message_callback);
+
+        // let id = video_settings.id.clone();
+
+        // let _ = tokio::task::spawn_blocking(move || async move {
+        //     println!("Bus");
+        //     bus.set_sync_handler(move |_, msg| {
+        //         println!("Message",);
+        //         let res = message_sender
+        //             .blocking_send(GstreamerMessage::Message(id.clone(), msg.clone()));
+
+        //         if res.is_err() {
+        //             return BusSyncReply::Drop;
+        //         }
+
+        //         BusSyncReply::Pass
+        //     });
+        //     println!("Bus done");
+        // });
+
         debug!("Create ghost pad");
         let pad = video_convert
             .static_pad("sink")
