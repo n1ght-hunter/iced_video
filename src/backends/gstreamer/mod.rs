@@ -5,7 +5,7 @@ use glib::{Cast, Continue, ObjectExt};
 use gst::{
     prelude::{ElementExtManual, GstBinExtManual},
     traits::{ElementExt, PadExt},
-    FlowError, FlowSuccess,
+    BusSyncReply, FlowError, FlowSuccess,
 };
 use iced::widget::image;
 use log::{debug, info};
@@ -82,16 +82,9 @@ impl GstreamerBackend {
 
                 Ok(FlowSuccess::Ok)
             },
-            move |_bus, msg| {
-                println!("Message: ");
-                let res = sender1.blocking_send(GstreamerMessage::Message(id2.clone(), msg.copy()));
-
-                if res.is_err() {
-                    return Continue(false);
-                }
-
-                // Tell the mainloop to continue executing this callback.
-                Continue(true)
+            move |_, msg| {
+                let _ = sender1.blocking_send(GstreamerMessage::Message(id2.clone(), msg.copy()));
+                BusSyncReply::Pass
             },
         )
         .unwrap();
@@ -108,7 +101,7 @@ impl GstreamerBackend {
     where
         Self: Sized,
         C: FnMut(&gst_app::AppSink) -> Result<gst::FlowSuccess, gst::FlowError> + Send + 'static,
-        F: FnMut(&gst::Bus, &gst::Message) -> Continue + Send + 'static,
+        F: Fn(&gst::Bus, &gst::Message) -> BusSyncReply + Send + Sync + 'static,
     {
         info!("Initializing Player");
 
@@ -158,12 +151,8 @@ impl GstreamerBackend {
         let bus = source
             .bus()
             .expect("Pipeline without bus. Shouldn't happen!");
-     
-        let _ = bus.add_watch(|bus, msg| {
-            println!("Message: ");
-            Continue(true)
-        })?;
 
+        bus.set_sync_handler(message_callback);
         debug!("Create ghost pad");
         let pad = video_convert
             .static_pad("sink")
