@@ -16,9 +16,8 @@ has been tested on GStreamer 1.22.1
 ### Known Issues:
 - panics somtimes when change source uri
 - slider goes to 0 after releasing when using seek
-- styles need redoing waiting for a new theme widget
+- styles bad
 - when a video finishes it gstreamer panics
-- next and prevous frame dont work
 ### Road Map
 
 - add wasm backend using canvas and wasm-bindgen
@@ -27,7 +26,7 @@ has been tested on GStreamer 1.22.1
 - add mpv backend
 - build custom widget to display opengl textures if possible (faster then getting and displaying RGB)
 - optional overlay with controls(WIP)
-- option to popout player needs https://github.com/iced-rs/iced/pull/1439
+- option to popout player
 
 
 ### License
