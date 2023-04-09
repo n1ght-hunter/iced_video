@@ -17,6 +17,7 @@
 - messages dont seem to be working
 ### Road Map
 
+- add wasm support
 - build custom widget to display opengl textures if possible (faster then getting and displaying RGB)
 - optional overlay with controls(WIP)
 - update widget without cause entire view to be updated
