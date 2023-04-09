@@ -1,27 +1,33 @@
 //! A struct that handles all the players and images
 //! offers a high level api to interact with the players
 
+use crate::{Player, PlayerBuilder, PlayerMessage};
+use iced::widget::image;
 use std::collections::HashMap;
 
-use iced::widget::image;
-
-use crate::{
-    iced_subscription::{self, PlayerMessage},
-    player::VideoPlayer,
-    video_settings::VideoSettings,
-};
+use crate::iced_subscription;
 
 /// A struct that handles all the players and images
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct PlayerHandler {
-    subscriptions: Vec<VideoSettings>,
-    players: HashMap<String, VideoPlayer>,
+    subscriptions: Vec<PlayerBuilder>,
+    players: HashMap<String, Player>,
     images: HashMap<String, image::Handle>,
+}
+
+impl Default for PlayerHandler {
+    fn default() -> Self {
+        Self {
+            subscriptions: Vec::new(),
+            players: HashMap::new(),
+            images: HashMap::new(),
+        }
+    }
 }
 
 impl PlayerHandler {
     /// start a new player
-    pub fn start_player(&mut self, settings: VideoSettings) {
+    pub fn start_player(&mut self, settings: PlayerBuilder) {
         self.subscriptions.push(settings);
     }
 
@@ -52,17 +58,17 @@ impl PlayerHandler {
 
 impl PlayerHandler {
     /// get a mutable reference to the player
-    pub fn get_player_mut(&mut self, id: &str) -> Option<&mut VideoPlayer> {
+    pub fn get_player_mut(&mut self, id: &str) -> Option<&mut Player> {
         self.players.get_mut(id)
     }
 
     /// get a reference to the player
-    pub fn get_player(&self, id: &str) -> Option<&VideoPlayer> {
+    pub fn get_player(&self, id: &str) -> Option<&Player> {
         self.players.get(id)
     }
 
     /// get all the players in a hashmap
-    pub fn get_all_players(&self) -> &HashMap<String, VideoPlayer> {
+    pub fn get_all_players(&self) -> &HashMap<String, Player> {
         &self.players
     }
 
@@ -78,7 +84,7 @@ impl PlayerHandler {
 
     /// get all the players and images zipped together
     /// will only return the players that have an image
-    pub fn players_and_images(&self) -> Vec<(&String, &VideoPlayer, &image::Handle)> {
+    pub fn players_and_images(&self) -> Vec<(&String, &Player, &image::Handle)> {
         self.players
             .iter()
             .filter_map(|(id, player)| self.images.get(id).map(|image| (id, player, image)))

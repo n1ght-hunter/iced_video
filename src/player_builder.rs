@@ -1,25 +1,24 @@
 //! VideoSettings is used to configure the player before it is created
 
+use crate::{Player, PlayerMessage};
+
 /// setting when creating a player
 #[derive(Clone, Debug)]
-pub struct VideoSettings {
+pub struct PlayerBuilder {
     /// id of the player used for subscription and accesing player
     pub(crate) id: String,
     /// start player in play state
     pub(crate) auto_start: bool,
-    /// if live duration won't work and trying to seek will cause a panic
-    pub(crate) live: bool,
     /// vdieo uri
     pub(crate) uri: Option<String>,
 }
 
-impl VideoSettings {
+impl PlayerBuilder {
     /// create a new video settings
     pub fn new(id: impl Into<String>) -> Self {
         Self {
             id: id.into(),
             auto_start: false,
-            live: false,
             uri: None,
         }
     }
@@ -30,15 +29,18 @@ impl VideoSettings {
         self
     }
 
-    /// if live duration won't work and trying to seek will cause a panic
-    pub fn set_live(mut self, live: bool) -> Self {
-        self.live = live;
-        self
-    }
-
     /// vdieo uri can be set later
     pub fn set_uri(mut self, uri: impl Into<String>) -> Self {
         self.uri = Some(uri.into());
         self
+    }
+
+    /// build a player with the settings
+    pub fn build(self) -> (PlayerMessage, tokio::sync::mpsc::Receiver<PlayerMessage>) {
+        if cfg!(feature = "gstreamer") {
+            Player::new(self)
+        } else {
+            panic!("No backend selected");
+        }
     }
 }
