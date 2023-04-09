@@ -1,36 +1,10 @@
 //! The player backend trait and structs
 //! all player backends must implement this trait
 
-/// settings for when creating a player
-#[derive(Debug)]
-pub struct VideoSettings {
-    /// id of the player used for subscription and accesing player
-    pub(crate) id: String,
-    /// start player in play state
-    pub(crate) auto_start: bool,
-    /// vdieo uri
-    pub(crate) uri: Option<String>,
-}
-
 /// the player trait
-pub(crate) trait PlayerBackend {
+pub trait PlayerBackend {
+    /// the error type
     type Error: Send + Sync + 'static;
-
-    /// Creates a new player
-    /// # Arguments
-    /// * `video_settings` - the video settings to use when creating the player
-    /// * `frame_callback` - the callback to use when a new frame is ready
-    /// * `message_callback` - the callback to use when a new message is ready
-    fn new<C, F>(
-        video_settings: VideoSettings,
-        frame_callback: Option<C>,
-        message_callback: Option<F>,
-    ) -> Result<Self, Self::Error>
-    where
-        Self: Sized,
-        C: FnMut(&gst_app::AppSink) -> Result<gst::FlowSuccess, gst::FlowError> + Send + 'static,
-        F: FnMut(&gst::Bus, &gst::Message) -> gst::prelude::Continue + Send + 'static;
-
     /// Sets the source of the player
     /// # Arguments
     /// * `uri` - the uri to set the source to
@@ -56,7 +30,7 @@ pub(crate) trait PlayerBackend {
     /// set the audio mute state of the player
     /// # Arguments
     /// * `mute` - the mute state to set the player to this does not affect the volume multiplier
-    fn set_mute(&mut self, mute: bool);
+    fn set_muted(&mut self, mute: bool);
 
     /// get the audio mute state of the player
     /// # Returns

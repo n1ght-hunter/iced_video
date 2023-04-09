@@ -1,5 +1,5 @@
 use iced::Command;
-use iced_video::viewer::ControlEvent;
+use iced_video::{viewer::ControlEvent, PlayerBackend};
 
 use crate::state::State;
 
@@ -8,10 +8,15 @@ use super::Message;
 pub fn control_event(state: &mut State, event: ControlEvent) -> iced::Command<Message> {
     if let Some(player) = state.player_handler.get_player_mut("main player") {
         match event {
-            ControlEvent::Play => player.set_playing_state(true),
-            ControlEvent::Pause => player.set_playing_state(false),
+            ControlEvent::Play => player
+                .set_paused(false)
+                .unwrap_or_else(|err| println!("Error seting paused state: {:?}", err)),
+
+            ControlEvent::Pause => player
+                .set_paused(true)
+                .unwrap_or_else(|err| println!("Error seting paused state: {:?}", err)),
             ControlEvent::ToggleMute => {
-                if player.muted() {
+                if player.get_mute() {
                     player.set_muted(false)
                 } else {
                     player.set_muted(true)

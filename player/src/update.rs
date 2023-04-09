@@ -2,7 +2,7 @@ pub mod menu_event;
 pub mod player_event;
 
 use iced::Command;
-use iced_video::{iced_subscription::PlayerMessage, viewer::ControlEvent};
+use iced_video::{viewer::ControlEvent, PlayerMessage, PlayerBackend};
 
 use crate::State;
 
@@ -31,8 +31,8 @@ pub fn update(state: &mut State, message: Message) -> iced::Command<Message> {
         Message::None(_) => (),
         Message::MenuEvent(event) => return menu_event(state, event),
         Message::SetUri(uri) => {
-            if let Some(player) = &mut state.player_handler.get_player_mut("main player") {
-                player.set_source(uri).unwrap();
+            if let Some(player) = state.player_handler.get_player_mut("main player") {
+                player.set_source(&uri).unwrap();
             }
         }
     }

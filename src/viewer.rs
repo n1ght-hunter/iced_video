@@ -9,7 +9,9 @@ use iced::{
 use iced_futures::MaybeSend;
 
 use crate::{
-    helpers::helper_functions::secs_to_hhmmss, overlay::Overlay, player::VideoPlayer, svgs,
+    helpers::{helper_functions::secs_to_hhmmss, svgs},
+    overlay::Overlay,
+    Player, PlayerBackend,
 };
 
 /// viewer event enum
@@ -26,12 +28,13 @@ pub enum ControlEvent {
 
 /// a viewer fuction to make an over easyliy
 pub fn video_view<'a, Message, Renderer, F>(
-    player: &'a VideoPlayer,
+    player: &'a Player,
     frame: Option<&'a iced_native::image::Handle>,
     on_event: &'a F,
     seek_amount: &'a Option<u64>,
 ) -> iced::Element<'a, Message, Renderer>
 where
+    Player: PlayerBackend,
     Message: std::clone::Clone + 'a,
     Renderer: iced_native::text::Renderer
         + iced_native::image::Renderer
@@ -59,15 +62,14 @@ where
     } else {
         iced::widget::image(iced_native::image::Handle::from_pixels(0, 0, vec![]))
     };
-
-    let duration = player.duration().as_secs();
+    let duration = player.get_duration().as_secs();
     let position = if let Some(seek) = seek_amount {
         seek.to_owned()
     } else {
-        player.position().as_secs()
+        player.get_position().as_secs()
     };
 
-    let play_pause = if player.paused() {
+    let play_pause = if player.get_paused() {
         widget::Button::new(svg(svgs::play_svg()).height(28).width(28))
             .on_press(on_event(ControlEvent::Play).clone())
     } else {
@@ -93,7 +95,7 @@ where
         svgs::muted_svg()
     };
 
-    let volume_button = if !player.muted() {
+    let volume_button = if !player.get_mute() {
         widget::Button::new(svg(volume_svg).height(28).width(28))
             .on_press(on_event(ControlEvent::ToggleMute).clone())
     } else {
