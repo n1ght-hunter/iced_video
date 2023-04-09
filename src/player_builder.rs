@@ -36,7 +36,12 @@ impl PlayerBuilder {
     }
 
     /// build a player with the settings
-    pub fn build(self) -> (PlayerMessage, tokio::sync::mpsc::UnboundedReceiver<PlayerMessage>) {
+    pub fn build(
+        self,
+    ) -> (
+        PlayerMessage,
+        tokio::sync::mpsc::UnboundedReceiver<PlayerMessage>,
+    ) {
         if cfg!(feature = "gstreamer") {
             Player::new(self)
         } else {
