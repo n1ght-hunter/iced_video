@@ -30,3 +30,7 @@ members = [
   "examples/gifs",
   "examples/multiple_videos",
 ]
+
+[features]
+default = ["gstreamer"]
+gstreamer = []

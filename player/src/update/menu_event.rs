@@ -1,4 +1,5 @@
 use iced::Command;
+use iced_video::PlayerBackend;
 use rfd::AsyncFileDialog;
 
 use crate::state::State;
@@ -48,7 +49,7 @@ pub fn menu_event(state: &mut State, event: MenuEvent) -> iced::Command<Message>
         MenuEvent::OpenFile(file) => {
             if let Some(uri) = file {
                 if let Some(player) = state.player_handler.get_player_mut("main player") {
-                    player.set_source(uri).unwrap();
+                    player.set_source(&uri).unwrap();
                 }
             }
         }
