@@ -20,7 +20,6 @@ pub fn video_subscription(settings: PlayerBuilder) -> iced::Subscription<PlayerM
         |state| async move {
             match state {
                 PlayerSubscription::Starting(settings) => {
-                    let id = settings.id.clone();
                     let (player, receiver) = settings.build();
                     (Some(player), PlayerSubscription::Next(receiver))
                 }

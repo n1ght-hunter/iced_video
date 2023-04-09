@@ -2,7 +2,7 @@ pub mod menu_event;
 pub mod player_event;
 
 use iced::Command;
-use iced_video::{viewer::ControlEvent, PlayerMessage, PlayerBackend};
+use iced_video::{viewer::ControlEvent, PlayerBackend, PlayerMessage};
 
 use crate::State;
 
