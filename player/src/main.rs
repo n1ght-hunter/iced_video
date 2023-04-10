@@ -5,6 +5,7 @@ pub mod update;
 pub mod view;
 
 use iced::{executor, Application};
+use iced_video::PlayerBackend;
 use state::State;
 use subscriptions::subscriptions;
 use update::{update, Message};
@@ -36,7 +37,19 @@ impl Application for State {
     }
 
     fn title(&self) -> String {
-        self.title.to_owned()
+        if let Some(iced_video::tag_convert::Tag::Title(title)) = self.tags.get("title") {
+            format!("{} - {}", title, self.title)
+        } else if let Some(player) = self.player_handler.get_player("main player") {
+            let uri = player.get_source();
+            if let Some(uri) = uri {
+                let uri = uri.split("\\").last().unwrap_or(&uri);
+                format!("{} - {}", uri, self.title)
+            } else {
+                self.title.to_owned()
+            }
+        } else {
+            self.title.to_owned()
+        }
     }
 
     fn update(&mut self, message: Self::Message) -> iced::Command<Message> {
