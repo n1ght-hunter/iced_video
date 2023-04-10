@@ -1,5 +1,7 @@
+use std::collections::HashMap;
+
 use iced::Command;
-use iced_video::{player_handler::PlayerHandler, PlayerBuilder};
+use iced_video::{player_handler::PlayerHandler, PlayerBuilder, tag_convert::Tag};
 
 use crate::update::Message;
 
@@ -7,6 +9,7 @@ pub struct State {
     pub player_handler: PlayerHandler,
     pub seek: Option<u64>,
     pub title: String,
+    pub tags: HashMap<String, Tag>
 }
 
 impl State {
@@ -19,6 +22,7 @@ impl State {
                 player_handler,
                 seek: None,
                 title: String::from("Video Player"),
+                tags: HashMap::new()
             },
             Command::none(),
         )

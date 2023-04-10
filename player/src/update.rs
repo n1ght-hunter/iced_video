@@ -2,7 +2,12 @@ pub mod menu_event;
 pub mod player_event;
 
 use iced::Command;
-use iced_video::{viewer::ControlEvent, PlayerBackend, PlayerMessage};
+use iced_video::{
+    gstreamer::{DateTime, MessageView},
+    tag_convert::TaglistToTags,
+    viewer::ControlEvent,
+    PlayerBackend, PlayerMessage,
+};
 
 use crate::State;
 
@@ -24,7 +29,16 @@ pub fn update(state: &mut State, message: Message) -> iced::Command<Message> {
     match message {
         Message::Video(event) => {
             if let Some((_player_id, message)) = state.player_handler.handle_event(event) {
-                println!("message: {:?}", message);
+                match message.view() {
+                    MessageView::Tag(tag) => {
+                        let tags = tag.tags().to_rust_tags();
+                        tags.into_iter().for_each(|(key, value)| {
+                            let _ = state.tags.insert(key, value);
+                        });
+                    }
+                    _ => (),
+                }
+                // println!("message: {:?}", message.view());
             }
         }
         Message::ControlEvent(event) => return control_event(state, event),
