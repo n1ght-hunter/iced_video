@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use iced::Command;
-use iced_video::{player_handler::PlayerHandler, PlayerBuilder};
+use iced_video::{player_handler::PlayerHandler, PlayerBuilder, tag_convert::Tag};
 
 use crate::update::Message;
 
