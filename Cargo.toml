@@ -8,8 +8,7 @@ version = "0.1.0"
 [dependencies]
 anyhow = "1"
 derive_more = "*"
-glib = "0.17"
-gst = {package = "gstreamer", version = "0.20"}
+gst = {package = "gstreamer", version = "0.20", features = ["serde"]}
 gst_app = {package = "gstreamer-app", version = "0.20"}
 gst_video = {package = "gstreamer-video", version = "0.20"}
 log = "0.4"
