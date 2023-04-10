@@ -1,5 +1,6 @@
 mod error;
 mod unsafe_functions;
+pub mod tag_convert;
 pub use error::GstreamerError;
 use gst::{
     glib::{Cast, ObjectExt},
