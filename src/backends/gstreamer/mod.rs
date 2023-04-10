@@ -1,8 +1,8 @@
 mod error;
 mod unsafe_functions;
 pub use error::GstreamerError;
-use glib::{Cast, ObjectExt};
 use gst::{
+    glib::{Cast, ObjectExt},
     prelude::{ElementExtManual, GstBinExtManual},
     traits::{ElementExt, PadExt},
     BusSyncReply, FlowError, FlowSuccess,
@@ -87,12 +87,10 @@ impl GstreamerBackend {
                 Ok(FlowSuccess::Ok)
             },
             move |_, msg| {
-                println!("Got message {:?}", msg);
-
                 let res = sender1.send(GstreamerMessage::Message(id2.clone(), msg.clone()));
 
                 if res.is_err() {
-                    eprintln!("Error sending message");
+                    log::error!("Error sending message");
                 }
                 BusSyncReply::Pass
             },
@@ -165,24 +163,6 @@ impl GstreamerBackend {
         let _id = video_settings.id.clone();
 
         bus.set_sync_handler(message_callback);
-
-        // let id = video_settings.id.clone();
-
-        // let _ = tokio::task::spawn_blocking(move || async move {
-        //     println!("Bus");
-        //     bus.set_sync_handler(move |_, msg| {
-        //         println!("Message",);
-        //         let res = message_sender
-        //             .blocking_send(GstreamerMessage::Message(id.clone(), msg.clone()));
-
-        //         if res.is_err() {
-        //             return BusSyncReply::Drop;
-        //         }
-
-        //         BusSyncReply::Pass
-        //     });
-        //     println!("Bus done");
-        // });
 
         debug!("Create ghost pad");
         let pad = video_convert
