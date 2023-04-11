@@ -3,6 +3,7 @@
 ![Basic Example Gif](https://github.com/Night-Hunter-NF/iced_video/blob/master/assets/basic_example.gif)
 
 **Gstreamer install instruction [here](https://gitlab.freedesktop.org/gstreamer/gstreamer-rs#installation)**
+has been tested on GStreamer 1.22.1
 
 ### Features:
 
