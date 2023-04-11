@@ -84,6 +84,16 @@ pub trait PlayerBackend {
     /// * `String` - if the rate is invalid
     fn set_rate(&self, rate: f64) -> Result<(), Self::Error>;
 
+    /// next frame of the video
+    /// # Errors
+    /// * `String` - if there is no video stream
+    fn next_frame(&mut self) -> Result<(), Self::Error>;
+
+    /// previous frame of the video
+    /// # Errors
+    /// * `String` - if there is no video stream
+    fn previous_frame(&mut self) -> Result<(), Self::Error>;
+
     /// send exit event to the player
     /// # Errors
     /// * `glib::Error` - if the player is already stopped

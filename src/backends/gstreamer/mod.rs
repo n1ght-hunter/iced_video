@@ -305,9 +305,47 @@ impl PlayerBackend for GstreamerBackend {
                 .map_or(0, |pos| pos.nseconds()),
         )
     }
-    
+
     fn get_rate(&self) -> f64 {
         self.playback_rate
+    }
+
+    fn next_frame(&mut self) -> Result<(), Self::Error> {
+        if let Some(video_sink) = self.playbin.property::<Option<gst::Element>>("video-sink") {
+            debug!("Stepping one frame");
+            // Send the event
+            let step = gst::event::Step::new(
+                gst::format::Buffers::ONE,
+                self.playback_rate.abs(),
+                true,
+                false,
+            );
+            match video_sink.send_event(step) {
+                true => Ok(()),
+                false => Err("Failed to send seek event to the sink".into()),
+            }
+        } else {
+            Err("No video sink found".into())
+        }
+    }
+
+    fn previous_frame(&mut self) -> Result<(), Self::Error> {
+        if let Some(video_sink) = self.playbin.property::<Option<gst::Element>>("video-sink") {
+            debug!("Stepping one frame");
+            // Send the event
+            let step = gst::event::Step::new(
+                gst::format::Buffers::ONE,
+                -self.playback_rate.abs(),
+                true,
+                false,
+            );
+            match video_sink.send_event(step) {
+                true => Ok(()),
+                false => Err("Failed to send seek event to the sink".into()),
+            }
+        } else {
+            Err("No video sink found".into())
+        }
     }
 
     fn set_rate(&self, rate: f64) -> Result<(), Self::Error> {
