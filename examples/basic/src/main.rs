@@ -89,7 +89,7 @@ impl Application for App {
                         }
                         ControlEvent::Released => {
                             player
-                                .seek(self.seek.unwrap())
+                                .seek(std::time::Duration::from_secs(self.seek.unwrap()))
                                 .unwrap_or_else(|err| println!("Error seeking: {:?}", err));
                             self.seek = None;
                         }
