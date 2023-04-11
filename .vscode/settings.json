@@ -1,7 +1,7 @@
 {
     "rust-analyzer.linkedProjects": [
         ".\\Cargo.toml",
-        ".\\player\\Cargo.toml",
+        ".\\playerust\\Cargo.toml",
         // ".\\wgpu_testing\\Cargo.toml",
         ".\\examples\\multiple_videos\\Cargo.toml",
         ".\\examples\\basic\\Cargo.toml",
