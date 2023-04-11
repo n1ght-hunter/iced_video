@@ -8,7 +8,7 @@ use iced_video::{
     PlayerBackend, PlayerMessage,
 };
 
-use crate::{helpers::component_trait::Update, State};
+use crate::{helpers::componet_trait::Update, State};
 
 use self::{
     menu_event::{menu_event, MenuEvent},
@@ -50,7 +50,7 @@ pub fn update(state: &mut State, message: Message) -> iced::Command<Message> {
             }
         }
         Message::KeyBoardEvent(event) => {
-            return crate::components::keypress::KeyPressHandler::update(state, event)
+            return crate::componets::keypress::KeyPressHandler::update(state, event)
         }
     }
     Command::none()

@@ -59,10 +59,10 @@ pub trait PlayerBackend {
 
     /// seek to a position in the video
     /// # Arguments
-    /// * `position` - the position to seek to in nanoseconds
+    /// * `position` - the position to seek to in seconds
     /// # Errors
     /// * `glib::Error` - if the position is invalid
-    fn seek(&mut self, position: u64) -> Result<(), Self::Error>;
+    fn seek(&mut self, position: std::time::Duration) -> Result<(), Self::Error>;
 
     /// get the current position of the video
     /// # Returns
@@ -82,7 +82,7 @@ pub trait PlayerBackend {
     /// * `rate` - the playback rate to set the player to
     /// # Errors  
     /// * `String` - if the rate is invalid
-    fn set_rate(&self, rate: f64) -> Result<(), Self::Error>;
+    fn set_rate(&mut self, rate: f64) -> Result<(), Self::Error>;
 
     /// next frame of the video
     /// # Errors

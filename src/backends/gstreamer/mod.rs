@@ -2,6 +2,8 @@ mod error;
 mod extra_functions;
 pub mod tag_convert;
 mod unsafe_functions;
+use std::time::Duration;
+
 pub use error::GstreamerError;
 use gst::{
     glib::{Cast, ObjectExt},
@@ -283,10 +285,13 @@ impl PlayerBackend for GstreamerBackend {
         }
     }
 
-    fn seek(&mut self, position: u64) -> Result<(), Self::Error> {
-        debug!("seeking to: {}", position);
-        self.playbin
-            .seek_simple(gst::SeekFlags::FLUSH, position * gst::ClockTime::SECOND)?;
+    fn seek(&mut self, position: std::time::Duration) -> Result<(), Self::Error> {
+        let pos = position.as_nanos() as u64;
+        debug!("seeking to: {}", position.as_secs());
+        self.playbin.seek_simple(
+            gst::SeekFlags::FLUSH,
+            pos * gst::ClockTime::NSECOND,
+        )?;
         Ok(())
     }
 
@@ -314,12 +319,8 @@ impl PlayerBackend for GstreamerBackend {
         if let Some(video_sink) = self.playbin.property::<Option<gst::Element>>("video-sink") {
             debug!("Stepping one frame");
             // Send the event
-            let step = gst::event::Step::new(
-                gst::format::Buffers::ONE,
-                self.playback_rate,
-                true,
-                false,
-            );
+            let step =
+                gst::event::Step::new(gst::format::Buffers::ONE, self.playback_rate, true, false);
             match video_sink.send_event(step) {
                 true => Ok(()),
                 false => Err("Failed to send seek event to the sink".into()),
@@ -333,12 +334,8 @@ impl PlayerBackend for GstreamerBackend {
         if let Some(video_sink) = self.playbin.property::<Option<gst::Element>>("video-sink") {
             debug!("Stepping one frame");
             // Send the event
-            let step = gst::event::Step::new(
-                gst::format::Buffers::ONE,
-                self.playback_rate,
-                true,
-                false,
-            );
+            let step =
+                gst::event::Step::new(gst::format::Buffers::ONE, self.playback_rate, true, false);
             match video_sink.send_event(step) {
                 true => Ok(()),
                 false => Err("Failed to send seek event to the sink".into()),
@@ -348,8 +345,9 @@ impl PlayerBackend for GstreamerBackend {
         }
     }
 
-    fn set_rate(&self, rate: f64) -> Result<(), Self::Error> {
+    fn set_rate(&mut self, rate: f64) -> Result<(), Self::Error> {
         debug!("set rate to: {}", rate);
+        self.playback_rate = rate;
         send_seek_event(&self.playbin, rate)?;
         Ok(())
     }
@@ -362,7 +360,7 @@ impl PlayerBackend for GstreamerBackend {
 
     fn restart_stream(&mut self) -> Result<(), Self::Error> {
         self.set_paused(false)?;
-        self.seek(0)?;
+        self.seek(Duration::ZERO)?;
         Ok(())
     }
 }

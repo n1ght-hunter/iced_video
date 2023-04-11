@@ -1,3 +1,2 @@
 
-pub mod component_trait;
-pub mod open_file;
+pub mod componet_trait;
