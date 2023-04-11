@@ -316,7 +316,7 @@ impl PlayerBackend for GstreamerBackend {
             // Send the event
             let step = gst::event::Step::new(
                 gst::format::Buffers::ONE,
-                self.playback_rate.abs(),
+                self.playback_rate,
                 true,
                 false,
             );
@@ -335,7 +335,7 @@ impl PlayerBackend for GstreamerBackend {
             // Send the event
             let step = gst::event::Step::new(
                 gst::format::Buffers::ONE,
-                -self.playback_rate.abs(),
+                self.playback_rate,
                 true,
                 false,
             );
