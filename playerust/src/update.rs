@@ -1,6 +1,5 @@
 pub mod menu_event;
 pub mod player_event;
-
 use iced::Command;
 use iced_video::{
     gstreamer::{DateTime, MessageView},
@@ -9,7 +8,7 @@ use iced_video::{
     PlayerBackend, PlayerMessage,
 };
 
-use crate::State;
+use crate::{helpers::componet_trait::Update, State};
 
 use self::{
     menu_event::{menu_event, MenuEvent},
@@ -18,6 +17,7 @@ use self::{
 
 #[derive(Clone, Debug)]
 pub enum Message {
+    KeyBoardEvent(iced::keyboard::Event),
     Video(PlayerMessage),
     ControlEvent(ControlEvent),
     MenuEvent(MenuEvent),
@@ -48,6 +48,9 @@ pub fn update(state: &mut State, message: Message) -> iced::Command<Message> {
             if let Some(player) = state.player_handler.get_player_mut("main player") {
                 player.set_source(&uri).unwrap();
             }
+        }
+        Message::KeyBoardEvent(event) => {
+            return crate::componets::keypress::KeyPressHandler::update(state, event)
         }
     }
     Command::none()

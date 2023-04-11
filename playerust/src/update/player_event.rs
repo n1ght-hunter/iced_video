@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use iced::Command;
 use iced_video::{viewer::ControlEvent, PlayerBackend};
 
@@ -28,7 +30,7 @@ pub fn control_event(state: &mut State, event: ControlEvent) -> iced::Command<Me
             }
             ControlEvent::Released => {
                 player
-                    .seek(state.seek.unwrap())
+                    .seek(Duration::from_secs(state.seek.unwrap()))
                     .unwrap_or_else(|err| println!("Error seeking: {:?}", err));
                 state.seek = None;
             }
