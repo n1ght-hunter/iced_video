@@ -25,9 +25,7 @@ version = "0.9"
 [workspace]
 members = [
   "playerust",
-  "examples/basic",
-  "examples/gifs",
-  "examples/multiple_videos",
+  "examples/*",
 ]
 
 [features]
