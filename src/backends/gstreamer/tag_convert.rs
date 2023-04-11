@@ -20,7 +20,7 @@ impl TryInto<String> for GStreamerTagTypes {
     fn try_into(self) -> Result<String, Self::Error> {
         match self {
             GStreamerTagTypes::GCharArray(value) => Ok(value),
-            GStreamerTagTypes::GUint(value) => Err("error wrong type"),
+            GStreamerTagTypes::GUint(_value) => Err("error wrong type"),
             GStreamerTagTypes::GstDateTime(value) => Ok(value),
             GStreamerTagTypes::Unknown(value) => Ok(value),
         }
@@ -32,10 +32,10 @@ impl TryInto<u32> for GStreamerTagTypes {
 
     fn try_into(self) -> Result<u32, Self::Error> {
         match self {
-            GStreamerTagTypes::GCharArray(value) => Err("error wrong type"),
+            GStreamerTagTypes::GCharArray(_value) => Err("error wrong type"),
             GStreamerTagTypes::GUint(value) => Ok(value),
-            GStreamerTagTypes::GstDateTime(value) => Err("error wrong type"),
-            GStreamerTagTypes::Unknown(value) => Err("error wrong type"),
+            GStreamerTagTypes::GstDateTime(_value) => Err("error wrong type"),
+            GStreamerTagTypes::Unknown(_value) => Err("error wrong type"),
         }
     }
 }
@@ -88,6 +88,8 @@ pub trait TaglistToTags {
 
 impl TaglistToTags for TagList {
     fn to_rust_tags(&self) -> Vec<(String, Tag)> {
+        // let asdf = self.get::<gst::tags::Title>().map(|x| x.get().to_string());
+
         self.iter()
             .map(|(name, value)| {
                 let value = GStreamerTagTypes::from(value);
