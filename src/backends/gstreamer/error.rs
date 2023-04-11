@@ -7,6 +7,12 @@ pub enum GstreamerError {
     CustomError(&'static str),
 }
 
+impl From<&'static str> for GstreamerError {
+    fn from(e: &'static str) -> Self {
+        GstreamerError::CustomError(e)
+    }
+}
+
 impl From<gst::StateChangeError> for GstreamerError {
     fn from(_: gst::StateChangeError) -> Self {
         GstreamerError::CustomError("Element failed to change its state")
