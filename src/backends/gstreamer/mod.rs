@@ -1,6 +1,7 @@
 mod error;
-mod unsafe_functions;
+mod extra_functions;
 pub mod tag_convert;
+mod unsafe_functions;
 pub use error::GstreamerError;
 use gst::{
     glib::{Cast, ObjectExt},
@@ -13,18 +14,19 @@ use log::{debug, info};
 use tokio::sync::mpsc;
 use unsafe_functions::is_initialized;
 
-use crate::{PlayerBackend, PlayerBuilder};
+use crate::{backends::gstreamer::extra_functions::send_seek_event, PlayerBackend, PlayerBuilder};
 
 /// A gstreamer backend for the player.
 #[derive(Debug, Clone)]
 pub struct GstreamerBackend {
-    source: gst::Element,
+    playbin: gst::Element,
     bin: gst::Bin,
     ghost_pad: gst::GhostPad,
 
     settings: crate::PlayerBuilder,
 
     video_details: Option<VideoDetails>,
+    playback_rate: f64,
 }
 
 /// stores some details about the video.
@@ -119,9 +121,9 @@ impl GstreamerBackend {
             gst::init()?;
         }
 
-        let source = gst::ElementFactory::make("playbin3").build()?;
+        let playbin = gst::ElementFactory::make("playbin3").build()?;
 
-        source.set_property("instant-uri", true);
+        playbin.set_property("instant-uri", true);
 
         let video_convert = gst::ElementFactory::make("videoconvert").build()?;
 
@@ -157,7 +159,7 @@ impl GstreamerBackend {
         );
         // callback for bus messages
         // sends messages to subscription
-        let bus = source
+        let bus = playbin
             .bus()
             .expect("Pipeline without bus. Shouldn't happen!");
 
@@ -174,11 +176,12 @@ impl GstreamerBackend {
         bin.add_pad(&ghost_pad)?;
 
         let mut backend = GstreamerBackend {
-            source,
+            playbin,
             bin,
             ghost_pad,
             settings: video_settings,
             video_details: None,
+            playback_rate: 1.0,
         };
 
         if let Some(url) = backend.settings.uri.clone() {
@@ -195,15 +198,15 @@ impl PlayerBackend for GstreamerBackend {
 
     fn set_source(&mut self, uri: &str) -> Result<(), Self::Error> {
         info!("Setting source to {}", uri);
-        self.source.set_property("uri", &uri);
+        self.playbin.set_property("uri", &uri);
 
-        self.source.set_property("video-sink", &self.bin);
+        self.playbin.set_property("video-sink", &self.bin);
 
-        let _ = self.source.set_state(gst::State::Playing)?;
+        let _ = self.playbin.set_state(gst::State::Playing)?;
 
         debug!("Waiting for decoder to get source capabilities");
         // wait for up to 5 seconds until the decoder gets the source capabilities
-        let _ = self.source.state(gst::ClockTime::from_seconds(5)).0?;
+        let _ = self.playbin.state(gst::ClockTime::from_seconds(5)).0?;
         let caps = self
             .ghost_pad
             .current_caps()
@@ -223,32 +226,32 @@ impl PlayerBackend for GstreamerBackend {
 
         if !self.settings.auto_start {
             debug!("auto start false setting state to paused");
-            let _ = self.source.set_state(gst::State::Paused)?;
+            let _ = self.playbin.set_state(gst::State::Paused)?;
         }
 
         Ok(())
     }
 
     fn get_source(&self) -> Option<String> {
-        self.source.property("current-uri")
+        self.playbin.property("current-uri")
     }
 
     fn set_volume(&mut self, volume: f64) {
         debug!("volume set to: {}", volume);
-        self.source.set_property("volume", &volume);
+        self.playbin.set_property("volume", &volume);
     }
 
     fn get_volume(&self) -> f64 {
-        self.source.property("volume")
+        self.playbin.property("volume")
     }
 
     fn set_muted(&mut self, mute: bool) {
         debug!("muted set to: {}", mute);
-        self.source.set_property("mute", &mute);
+        self.playbin.set_property("mute", &mute);
     }
 
     fn get_mute(&self) -> bool {
-        self.source.property("mute")
+        self.playbin.property("mute")
     }
 
     fn set_looping(&mut self, _looping: bool) {
@@ -262,7 +265,7 @@ impl PlayerBackend for GstreamerBackend {
     fn set_paused(&mut self, paused: bool) -> Result<(), Self::Error> {
         debug!("set paused state to: {}", paused);
         let _ = self
-            .source
+            .playbin
             .set_state(if paused {
                 gst::State::Paused
             } else {
@@ -274,7 +277,7 @@ impl PlayerBackend for GstreamerBackend {
     }
 
     fn get_paused(&self) -> bool {
-        match self.source.state(None).1 {
+        match self.playbin.state(None).1 {
             gst::State::Playing => false,
             _ => true,
         }
@@ -282,14 +285,14 @@ impl PlayerBackend for GstreamerBackend {
 
     fn seek(&mut self, position: u64) -> Result<(), Self::Error> {
         debug!("seeking to: {}", position);
-        self.source
+        self.playbin
             .seek_simple(gst::SeekFlags::FLUSH, position * gst::ClockTime::SECOND)?;
         Ok(())
     }
 
     fn get_position(&self) -> std::time::Duration {
         std::time::Duration::from_nanos(
-            self.source
+            self.playbin
                 .query_position::<gst::ClockTime>()
                 .map_or(0, |pos| pos.nseconds()),
         )
@@ -297,19 +300,25 @@ impl PlayerBackend for GstreamerBackend {
 
     fn get_duration(&self) -> std::time::Duration {
         std::time::Duration::from_nanos(
-            self.source
+            self.playbin
                 .query_duration::<gst::ClockTime>()
                 .map_or(0, |pos| pos.nseconds()),
         )
     }
+    
+    fn get_rate(&self) -> f64 {
+        self.playback_rate
+    }
 
-    fn get_bus(&self) -> &gst::Bus {
-        todo!()
+    fn set_rate(&self, rate: f64) -> Result<(), Self::Error> {
+        debug!("set rate to: {}", rate);
+        send_seek_event(&self.playbin, rate)?;
+        Ok(())
     }
 
     fn exit(&mut self) -> Result<(), Self::Error> {
         debug!("exiting");
-        let _ = self.source.send_event(gst::event::Eos::new());
+        let _ = self.playbin.send_event(gst::event::Eos::new());
         Ok(())
     }
 
