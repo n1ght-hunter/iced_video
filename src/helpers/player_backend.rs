@@ -74,10 +74,15 @@ pub trait PlayerBackend {
     /// * `std::time::Duration` - the duration of the video
     fn get_duration(&self) -> std::time::Duration;
 
-    /// get the gstreamer bus
-    /// # Returns
-    /// * `&gst::Bus` - the gstreamer bus
-    fn get_bus(&self) -> &gst::Bus;
+    /// get the playback rate of the player
+    fn get_rate(&self) -> f64;
+
+    /// set playback rate
+    /// # Arguments
+    /// * `rate` - the playback rate to set the player to
+    /// # Errors  
+    /// * `String` - if the rate is invalid
+    fn set_rate(&self, rate: f64) -> Result<(), Self::Error>;
 
     /// send exit event to the player
     /// # Errors
