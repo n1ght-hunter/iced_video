@@ -15,6 +15,7 @@ has been tested on GStreamer 1.22.1
 - slider goes to 0 after releasing when using seek
 - styles need redoing waiting for a new theme widget
 - when a video finishes it gstreamer panics
+- next and prevous frame dont work
 ### Road Map
 
 - add wasm backend
