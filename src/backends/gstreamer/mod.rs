@@ -226,11 +226,14 @@ impl PlayerBackend for GstreamerBackend {
             framerate: framerate.numer() as f64 / framerate.denom() as f64,
         });
 
+        debug!("source capabilities: {:?}", self.video_details);
+
         if !self.settings.auto_start {
             debug!("auto start false setting state to paused");
             let _ = self.playbin.set_state(gst::State::Paused)?;
         }
 
+        debug!("source set");
         Ok(())
     }
 
