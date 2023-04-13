@@ -21,7 +21,8 @@ has been tested on GStreamer 1.22.1
 - next and prevous frame dont work
 ### Road Map
 
-- add wasm backend
+- add wasm backend using canvas and wasm-bindgen
+- add wasm backedn using ffmpeg.wasm
 - add ffmpeg backend
 - add mpv backend
 - build custom widget to display opengl textures if possible (faster then getting and displaying RGB)
