@@ -1,6 +1,8 @@
 # Iced Video Player
 
-![Basic Example Gif](https://github.com/Night-Hunter-NF/iced_video/blob/master/assets/basic_example.gif)
+![Basic Example Gif](https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExZTc4MGY1NDA2NzM1OWQ2ZGJkM2EzMDM5ODY3NTcyZWZkMjQxODJjZCZjdD1n/Smq9mjsYAXzBu4tk7m/giphy.gif)
+
+[link to video](https://www.youtube.com/watch?v=5qoUGE-Ftdw)
 
 **Gstreamer install instruction [here](https://gitlab.freedesktop.org/gstreamer/gstreamer-rs#installation)**
 has been tested on GStreamer 1.22.1
