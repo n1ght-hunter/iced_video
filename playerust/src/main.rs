@@ -14,7 +14,7 @@ use update::{update, Message};
 use view::view;
 
 fn main() {
-    // std::env::set_var("GST_DEBUG", "3");
+    std::env::set_var("GST_DEBUG", "3");
     env_logger::init();
     State::run(Default::default()).unwrap();
 }
