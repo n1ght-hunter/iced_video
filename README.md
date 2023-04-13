@@ -12,6 +12,7 @@ has been tested on GStreamer 1.22.1
 - premade video overlay with controls
 
 ### Known Issues:
+- panics somtimes when change source uri
 - slider goes to 0 after releasing when using seek
 - styles need redoing waiting for a new theme widget
 - when a video finishes it gstreamer panics
