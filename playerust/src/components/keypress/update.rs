@@ -1,10 +1,10 @@
 use log::debug;
 use std::time::Duration;
 
-use iced::keyboard::KeyCode;
+use iced::{keyboard::KeyCode, Command};
 use iced_video::PlayerBackend;
 
-use crate::helpers::component_trait::Update;
+use crate::{helpers::{component_trait::Update, open_file::open_file}, update::{Message, menu_event::MenuEvent}};
 
 use super::KeyPressHandler;
 
@@ -24,101 +24,16 @@ impl Update for KeyPressHandler {
                 match key_code {
                     // File Operations
                     KeyCode::O if modifiers.is_empty() => {
-                        debug!("Open a single  file");
+                        debug!("Open a single file");
+                        return Command::perform(async { open_file().await }, |f| {
+                            Message::MenuEvent(MenuEvent::OpenFile(f))
+                        });
                     }
-                    KeyCode::O if modifiers.control() && modifiers.shift() => {
-                        debug!("Open multiple files");
-                    }
-                    KeyCode::F if modifiers.control() => {
-                        debug!("Open folder");
-                    }
-
-                    KeyCode::D if modifiers.control() => {
-                        debug!("Open disk");
-                    }
-                    KeyCode::N if modifiers.control() => {
-                        debug!("Open network stream");
-                    }
-                    KeyCode::C if modifiers.control() => {
-                        debug!("Open capture device");
-                    }
-                    KeyCode::V if modifiers.control() => {
-                        debug!("Open location copied in the clipboard");
-                    }
-                    KeyCode::R if modifiers.control() => {
-                        debug!("Convert and save file");
-                    }
-                    KeyCode::S if modifiers.control() => {
-                        debug!("Stream your media locally or on the internet");
-                    }
-
-                    // Program Operations
-                    KeyCode::Q if modifiers.control() => {
-                        debug!("close");
-                    }
-                    KeyCode::Q if modifiers.alt() => {
-                        debug!("close");
-                    }
-                    KeyCode::F4 if modifiers.alt() => {
-                        debug!("close");
-                    }
-                    KeyCode::E if modifiers.control() => {
-                        debug!("Open the adjustment and effects menu");
-                    }
-                    KeyCode::W if modifiers.shift() => {
-                        debug!("VLM Configuration");
-                    }
-                    KeyCode::M if modifiers.control() => {
-                        debug!("Open the message screen");
-                    }
-                    KeyCode::P if modifiers.control() => {
-                        debug!("Open the preferences menu");
-                    }
-                    KeyCode::F1 if modifiers.control() => {
-                        debug!("Open the About menu");
-                    }
-                    KeyCode::F1 if modifiers.is_empty() => {
-                        debug!("Open the help menu");
-                    }
-
                     // Playing Operations
                     KeyCode::Space if modifiers.is_empty() => {
                         if let Err(err) = player.set_paused(!player.get_paused()) {
                             eprintln!("Error: {:?}", err);
                         }
-                    }
-                    KeyCode::N if modifiers.is_empty() => {
-                        debug!("Next Track")
-                    }
-                    KeyCode::P if modifiers.is_empty() => {
-                        debug!("Previous Track")
-                    }
-
-                    KeyCode::F | KeyCode::F11 if modifiers.is_empty() => {
-                        debug!("Fullscreen")
-                    }
-                    KeyCode::H if modifiers.control() => {
-                        debug!("Switch minimal interface on and off");
-                    }
-                    KeyCode::T if modifiers.control() => {
-                        debug!("Go to a specific time of a playing media")
-                    }
-                    KeyCode::T if modifiers.is_empty() => {
-                        debug!("Show current and remaining time information");
-                    }
-                    KeyCode::P if modifiers.is_empty() => {
-                        debug!("go and play from the start of a file");
-                        if let Err(err) = player.restart_stream() {
-                            eprintln!("Error: {:?}", err);
-                        }
-                    }
-                    KeyCode::S if modifiers.is_empty() => {
-                        if let Err(err) = player.exit() {
-                            eprintln!("Error: {:?}", err);
-                        }
-                    }
-                    KeyCode::Escape if modifiers.is_empty() => {
-                        debug!("Exit fullscreen mode");
                     }
                     KeyCode::E if modifiers.is_empty() => {
                         if let Err(err) = player.next_frame() {
@@ -226,10 +141,6 @@ impl Update for KeyPressHandler {
                         debug!("Mute sound on and off");
                         player.set_muted(!player.get_muted());
                     }
-
-    
-
-            
 
                     // Disc Operations
                     _ => {}
