@@ -9,4 +9,4 @@ version = "0.1.0"
 iced_video = {path = "../../"}
 [dependencies.iced]
 features = ["tokio", "debug", "image"]
-version = "0.8"
+version = "0.9"
