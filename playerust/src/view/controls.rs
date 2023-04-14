@@ -58,7 +58,7 @@ pub fn controls(state: &State) -> Element {
     };
 
     let volume_button = if let Some(player) = player {
-        if !player.get_mute() {
+        if !player.get_muted() {
             widget::Button::new(widget::svg(volume_svg).height(28).width(28))
                 .on_press(Message::ControlEvent(ControlEvent::ToggleMute))
         } else {

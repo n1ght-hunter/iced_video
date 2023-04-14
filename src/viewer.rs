@@ -95,7 +95,7 @@ where
         svgs::muted_svg()
     };
 
-    let volume_button = if !player.get_mute() {
+    let volume_button = if !player.get_muted() {
         widget::Button::new(svg(volume_svg).height(28).width(28))
             .on_press(on_event(ControlEvent::ToggleMute).clone())
     } else {

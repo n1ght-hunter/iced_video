@@ -4,7 +4,7 @@ pub mod theme;
 pub mod update;
 pub mod view;
 pub mod helpers;
-pub mod componets;
+pub mod components;
 
 use iced::{executor, Application};
 use iced_video::PlayerBackend;
