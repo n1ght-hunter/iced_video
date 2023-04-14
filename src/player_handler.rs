@@ -6,8 +6,6 @@ use iced_native::image;
 use crate::{Player, PlayerBuilder, PlayerMessage};
 use std::collections::HashMap;
 
-use crate::iced_subscription;
-
 /// A struct that handles all the players and images
 #[derive(Debug)]
 pub struct PlayerHandler {

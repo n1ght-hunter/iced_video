@@ -52,12 +52,10 @@ pub enum GstreamerMessage {
 
 impl GstreamerBackend {
     /// Creates a gstreamer player.
-    pub fn new(
-        settings: PlayerBuilder,
-    ) -> (GstreamerMessage, mpsc::UnboundedReceiver<GstreamerMessage>) {
+    pub fn new(settings: PlayerBuilder) -> mpsc::UnboundedReceiver<GstreamerMessage> {
         let (sender, receiver) = mpsc::unbounded_channel::<GstreamerMessage>();
         let sender1 = sender.clone();
-        let _sender2 = sender.clone();
+        let sender2 = sender.clone();
         let id = settings.id.clone();
         let id1 = settings.id.clone();
         let id2 = settings.id.clone();
@@ -101,8 +99,10 @@ impl GstreamerBackend {
             },
         )
         .unwrap();
-
-        (GstreamerMessage::Player(id, player), receiver)
+        if let Err(err) = sender2.send(GstreamerMessage::Player(id, player)) {
+            log::error!("Error sending player: {}", err);
+        };
+         receiver
     }
 
     /// Builds the player.
@@ -156,7 +156,8 @@ impl GstreamerBackend {
         // creates then sends video handle to subscription
         app_sink.set_callbacks(
             gst_app::AppSinkCallbacks::builder()
-                .new_sample(frame_callback).eos(|a| {})
+                .new_sample(frame_callback)
+                .eos(|a| {})
                 .build(),
         );
         // callback for bus messages
@@ -291,10 +292,8 @@ impl PlayerBackend for GstreamerBackend {
     fn seek(&mut self, position: std::time::Duration) -> Result<(), Self::Error> {
         let pos = position.as_nanos() as u64;
         debug!("seeking to: {}", position.as_secs());
-        self.playbin.seek_simple(
-            gst::SeekFlags::FLUSH,
-            pos * gst::ClockTime::NSECOND,
-        )?;
+        self.playbin
+            .seek_simple(gst::SeekFlags::FLUSH, pos * gst::ClockTime::NSECOND)?;
         Ok(())
     }
 
