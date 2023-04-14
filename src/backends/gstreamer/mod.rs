@@ -159,8 +159,7 @@ impl GstreamerBackend {
                 .new_sample(frame_callback)
                 .build(),
         );
-        // callback for bus messages
-        // sends messages to subscription
+
         let bus = playbin
             .bus()
             .expect("Pipeline without bus. Shouldn't happen!");
