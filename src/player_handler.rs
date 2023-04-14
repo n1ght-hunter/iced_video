@@ -6,8 +6,6 @@ use iced_native::image;
 use crate::{Player, PlayerBuilder, PlayerMessage};
 use std::collections::HashMap;
 
-use crate::iced_subscription;
-
 /// A struct that handles all the players and images
 #[derive(Debug)]
 pub struct PlayerHandler {
@@ -37,7 +35,7 @@ impl PlayerHandler {
         let subscriptions = self
             .subscriptions
             .iter()
-            .map(|settings| iced_subscription::video_subscription(settings.clone()));
+            .map(|settings| settings.clone().build());
         iced::Subscription::batch(subscriptions)
     }
 

@@ -27,7 +27,6 @@ mod backends;
 mod player_builder;
 
 pub mod helpers;
-pub mod iced_subscription;
 pub mod overlay;
 pub mod player_handler;
 pub mod viewer;
