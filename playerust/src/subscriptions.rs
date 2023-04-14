@@ -1,5 +1,5 @@
 use crate::{
-    componets::keypress::KeyPressHandler, helpers::componet_trait::Subscription, update::Message,
+    components::keypress::KeyPressHandler, helpers::component_trait::Subscription, update::Message,
     State,
 };
 

@@ -1,2 +1,2 @@
 
-pub mod componet_trait;
+pub mod component_trait;

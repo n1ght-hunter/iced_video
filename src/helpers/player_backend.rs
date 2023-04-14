@@ -35,7 +35,7 @@ pub trait PlayerBackend {
     /// get the audio mute state of the player
     /// # Returns
     /// * `bool` - the mute state of the player
-    fn get_mute(&self) -> bool;
+    fn get_muted(&self) -> bool;
 
     /// set the looping state of the player
     /// # Arguments
