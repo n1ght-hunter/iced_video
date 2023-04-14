@@ -1,4 +1,8 @@
-use iced::{color, widget::slider, Color};
+use iced::{
+    color,
+    widget::slider::{self, Rail},
+    Color,
+};
 
 use super::Theme;
 
@@ -20,7 +24,10 @@ impl slider::StyleSheet for Theme {
     fn active(&self, style: &Self::Style) -> slider::Appearance {
         match style {
             Slider::Default => slider::Appearance {
-                rail_colors: (self.light_blue, self.light_blue),
+                rail: Rail {
+                    colors: (self.light_blue, self.light_blue),
+                    width: 2.0,
+                },
                 handle: slider::Handle {
                     shape: slider::HandleShape::Rectangle {
                         width: 8,
@@ -33,7 +40,10 @@ impl slider::StyleSheet for Theme {
             },
             Slider::Custom(f) => f(self),
             Slider::Seek => slider::Appearance {
-                rail_colors: (self.light_blue, color!(143, 143, 143)),
+                rail: Rail {
+                    colors: (self.light_blue, color!(143, 143, 143)),
+                    width: 2.0,
+                },
                 handle: slider::Handle {
                     shape: slider::HandleShape::Circle { radius: 7.5 },
                     color: color!(150, 150, 150),
@@ -42,7 +52,10 @@ impl slider::StyleSheet for Theme {
                 },
             },
             Slider::Volume => slider::Appearance {
-                rail_colors: (self.green, color!(143, 143, 143)),
+                rail: Rail {
+                    colors: (self.green, color!(143, 143, 143)),
+                    width: 2.0,
+                },
                 handle: slider::Handle {
                     shape: slider::HandleShape::Circle { radius: 7.5 },
                     color: color!(150, 150, 150),
