@@ -14,6 +14,7 @@ enum PlayerSubscription {
 
 /// The subscription for the video player.
 pub fn video_subscription(settings: PlayerBuilder) -> iced::Subscription<PlayerMessage> {
+
     subscription::unfold(
         settings.id.clone(),
         PlayerSubscription::Starting(settings),
@@ -21,11 +22,11 @@ pub fn video_subscription(settings: PlayerBuilder) -> iced::Subscription<PlayerM
             match state {
                 PlayerSubscription::Starting(settings) => {
                     let (player, receiver) = settings.build();
-                    (Some(player), PlayerSubscription::Next(receiver))
+                    (player, PlayerSubscription::Next(receiver))
                 }
                 PlayerSubscription::Next(mut stream) => {
                     let item = stream.recv().await.unwrap();
-                    (Some(item), PlayerSubscription::Next(stream))
+                    (item, PlayerSubscription::Next(stream))
                 }
             }
         },
