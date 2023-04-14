@@ -156,7 +156,7 @@ impl GstreamerBackend {
         // creates then sends video handle to subscription
         app_sink.set_callbacks(
             gst_app::AppSinkCallbacks::builder()
-                .new_sample(frame_callback)
+                .new_sample(frame_callback).eos(|a| {})
                 .build(),
         );
         // callback for bus messages
@@ -255,7 +255,7 @@ impl PlayerBackend for GstreamerBackend {
         self.playbin.set_property("mute", &mute);
     }
 
-    fn get_mute(&self) -> bool {
+    fn get_muted(&self) -> bool {
         self.playbin.property("mute")
     }
 

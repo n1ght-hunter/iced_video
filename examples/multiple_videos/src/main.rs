@@ -81,7 +81,7 @@ impl Application for App {
                             .set_paused(true)
                             .unwrap_or_else(|err| println!("Error seting paused state: {:?}", err)),
                         ControlEvent::ToggleMute => {
-                            if player.get_mute() {
+                            if player.get_muted() {
                                 player.set_muted(false)
                             } else {
                                 player.set_muted(true)
