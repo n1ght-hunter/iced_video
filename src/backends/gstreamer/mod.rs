@@ -157,7 +157,6 @@ impl GstreamerBackend {
         app_sink.set_callbacks(
             gst_app::AppSinkCallbacks::builder()
                 .new_sample(frame_callback)
-                .eos(|a| {})
                 .build(),
         );
         // callback for bus messages
