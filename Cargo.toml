@@ -26,6 +26,7 @@ version = "0.10"
 members = [
   "playerust",
   "examples/*",
+  "ffmpeg-testing",
 ]
 
 [features]

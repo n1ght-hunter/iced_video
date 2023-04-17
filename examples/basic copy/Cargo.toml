@@ -1,0 +1,13 @@
+[package]
+edition = "2021"
+name = "ffmpeg-basic"
+version = "0.1.0"
+
+[dependencies]
+iced_video = {path = "../../"}
+ffmpeg = {package = "ffmpeg-testing",  version = "0.1.0", path = "../../ffmpeg-testing" }
+
+
+[dependencies.iced]
+features = ["tokio", "debug", "image", "svg", "canvas"]
+version = "0.9"
