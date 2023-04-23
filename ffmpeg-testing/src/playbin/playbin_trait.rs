@@ -1,15 +1,17 @@
-use std::path::Path;
+use std::{path::Path, time::Duration};
 
-use super::types::{Frame, SampleCallback};
+pub trait PlayBinTrait<T> {
+    fn new() -> Self;
 
-pub trait PlayBinTrait {
-    fn new(uri: &Path, sample_callback: SampleCallback) -> Self;
+    fn set_source(&mut self, uri: &Path);
+
+    fn set_sample_callback(&self, sample_callback: T);
 
     fn play(&self);
 
     fn pause(&self);
 
-    fn seek(&self);
+    fn seek(&self, time: Duration);
 
-    fn stop(&self);
+    fn stop(&mut self);
 }
