@@ -1,8 +1,14 @@
+pub mod video_frame;
+
 use std::ffi::{c_char, c_int, c_void, CStr};
 
 use ffmpeg::{ffi::*, Error};
-use ndarray::Array3;
-use tracing::Level;
+use iced_native::image;
+use tracing::{error, info, Level};
+
+use crate::playbin::types::Frame;
+
+use self::video_frame::VideoFunctions;
 
 pub fn create_ffmpeg_logger() {
     unsafe {
@@ -121,54 +127,73 @@ fn log_filter_hacks(line: &str) -> bool {
     true
 }
 
-/// Converts an RGB24 video `AVFrame` produced by ffmpeg to an `ndarray`.
-///
-/// # Arguments
-///
-/// * `frame` - Video frame to convert.
-///
-/// # Returns
-///
-/// A three-dimensional `ndarray` with dimensions `(H, W, C)` and type byte.
-pub fn convert_frame_to_ndarray_rgb24(frame: &mut ffmpeg::Frame) -> Result<Array3<u8>, Error> {
-    unsafe {
-        let frame_ptr = frame.as_mut_ptr();
-        let frame_width: i32 = (*frame_ptr).width;
-        let frame_height: i32 = (*frame_ptr).height;
-        let frame_format = std::mem::transmute::<c_int, AVPixelFormat>((*frame_ptr).format);
-        assert_eq!(frame_format, AVPixelFormat::AV_PIX_FMT_RGB24);
+/// Convert a `ffmpeg::Frame` to a `Frame` struct.
+pub fn convert_frame_to_vec_rgba(frame: &mut ffmpeg::Frame) -> Result<Frame, Error> {
+    let frame_width = frame.width();
+    let frame_height = frame.height();
+    let frame_format = frame.format();
+    let src_data = frame.data();
+    let src_linesize = frame.linesize();
 
-        let mut frame_array =
-            Array3::<u8>::default((frame_height as usize, frame_width as usize, 3_usize));
+    let frame_array = vec![0; (frame_height * frame_width * 4) as usize];
 
-        let bytes_copied = av_image_copy_to_buffer(
-            frame_array.as_mut_ptr(),
-            frame_array.len() as i32,
-            (*frame_ptr).data.as_ptr() as *const *const u8,
-            (*frame_ptr).linesize.as_ptr() as *const i32,
+    let pixels = copy_image_to_buffer(
+        frame_array,
+        src_data,
+        src_linesize,
+        frame_format,
+        frame_width,
+        frame_height,
+    )?;
+
+    Ok(image::Handle::from_pixels(
+        frame_width as u32,
+        frame_height as u32,
+        pixels,
+    ))
+}
+
+fn copy_image_to_buffer(
+    mut buffer: Vec<u8>,
+    src_data: [*mut u8; 8],
+    src_linesize: [i32; 8],
+    frame_format: AVPixelFormat,
+    frame_width: i32,
+    frame_height: i32,
+) -> Result<Vec<u8>, Error> {
+    let bytes_copied = unsafe {
+        av_image_copy_to_buffer(
+            buffer.as_mut_ptr(),
+            buffer.len() as i32,
+            src_data.as_ptr() as *const *const u8,
+            src_linesize.as_ptr() as *const i32,
             frame_format,
             frame_width,
             frame_height,
             1,
-        );
+        )
+    };
 
-        if bytes_copied == frame_array.len() as i32 {
-            Ok(frame_array)
-        } else {
-            Err(Error::from(bytes_copied))
-        }
+    if bytes_copied == buffer.len() as i32 {
+        Ok(buffer)
+    } else {
+        error!(
+            "Failed to copy image to buffer: {} should be {}",
+            bytes_copied,
+            buffer.len()
+        );
+        Err(Error::from(bytes_copied))
     }
 }
 
-
 /// Copy frame properties from `src` to `dst`.
-/// 
+///
 /// # Arguments
-/// 
+///
 /// * `src` - Frame to get properties from.
 /// * `dst` - Frame to copy properties to.
 pub fn copy_frame_props(src: &ffmpeg::frame::Video, dst: &mut ffmpeg::frame::Video) {
     unsafe {
-      av_frame_copy_props(dst.as_mut_ptr(), src.as_ptr());
+        av_frame_copy_props(dst.as_mut_ptr(), src.as_ptr());
     }
-  }
+}
