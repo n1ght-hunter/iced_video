@@ -26,7 +26,8 @@ version = "0.10"
 members = [
   "playerust",
   "examples/*",
-  "ffmpeg-testing",
+  "ffmpeg-playbin",
+  "cpal-testing",
 ]
 
 [features]

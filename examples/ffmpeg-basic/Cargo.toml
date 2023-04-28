@@ -5,7 +5,8 @@ version = "0.1.0"
 
 [dependencies]
 iced_video = {path = "../../"}
-ffmpeg = {package = "ffmpeg-testing",  version = "0.1.0", path = "../../ffmpeg-testing" }
+ffmpeg_playbin = {package = "ffmpeg-playbin",  version = "0.1.0", path = "../../ffmpeg-playbin" }
+tracing-subscriber = "0.3.17"
 
 
 [dependencies.iced]
