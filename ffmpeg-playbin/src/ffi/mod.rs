@@ -6,9 +6,9 @@ use ffmpeg::{ffi::*, Error};
 use iced_native::image;
 use tracing::{error, info, Level};
 
-use crate::playbin::types::Frame;
+use crate::helpers::types::Frame;
 
-use self::video_frame::VideoFunctions;
+use video_frame::VideoFunctions;
 
 pub fn create_ffmpeg_logger() {
     unsafe {

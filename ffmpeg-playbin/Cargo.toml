@@ -1,12 +1,14 @@
 [package]
 edition = "2021"
-name = "ffmpeg-testing"
+name = "ffmpeg-playbin"
 version = "0.1.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+cpal = "0.15.2"
+crossbeam-queue = "0.3.8"
 ffmpeg = {package = "ffmpeg-next", version = "6.0.0", features = ["format", "codec", "software-resampling", "software-scaling"]}
 iced_native = "0.10.3"
 tokio = {version = "1.27.0", features = ["full"]}
 tracing = "0.1.37"
-tracing-subscriber = "0.3.16"
+

@@ -1,15 +1,20 @@
-use crate::playbin::{decoder::DecoderError, reader::ReaderError};
+use crate::{
+    decoder::{audio_decoder::AudioDecoderError, video_decoder::VideoDecoderError},
+    reader::ReaderError,
+};
 
 #[derive(Debug)]
 pub enum PlaybinError {
     NoVideoStream,
+    NoDefaultOutputDevice,
 }
 
 #[derive(Debug)]
 pub enum FFMPEGPLayerErros {
     FFmpegError(ffmpeg::Error),
     Playbin(PlaybinError),
-    Decoder(DecoderError),
+    VideoDecoder(VideoDecoderError),
+    AudioDecoder(AudioDecoderError),
     Reader(ReaderError),
     CustomError(String),
 }
@@ -20,9 +25,15 @@ impl From<ReaderError> for FFMPEGPLayerErros {
     }
 }
 
-impl From<DecoderError> for FFMPEGPLayerErros {
-    fn from(err: DecoderError) -> Self {
-        FFMPEGPLayerErros::Decoder(err)
+impl From<VideoDecoderError> for FFMPEGPLayerErros {
+    fn from(err: VideoDecoderError) -> Self {
+        FFMPEGPLayerErros::VideoDecoder(err)
+    }
+}
+
+impl From<AudioDecoderError> for FFMPEGPLayerErros {
+    fn from(err: AudioDecoderError) -> Self {
+        FFMPEGPLayerErros::AudioDecoder(err)
     }
 }
 
