@@ -19,7 +19,7 @@ use crate::{
     audio::AudioHandler,
     decoder::{audio_decoder::AudioDecoder, convert_audio::ToFFMPEG, video_decoder::VideoDecoder},
     error::{FFMPEGPLayerErros, PlaybinError},
-    helpers::{image::VideoFrame, playbin_trait},
+    helpers::{convert_audio::ToType, image::VideoFrame, playbin_trait},
     reader::{ReaderChannelType, StreamPacket},
 };
 
@@ -133,13 +133,13 @@ where
     let audio_config = audio_handler.config();
 
     let reader = Reader::new(&uri)?;
-    let video_parameters = reader.video_parameters();
+    // let video_parameters = reader.video_parameters();
 
-    let video_decoder = VideoDecoder::new(
-        ffmpeg::format::Pixel::RGBA,
-        video_parameters.1,
-        video_parameters.0,
-    )?;
+    // let video_decoder = VideoDecoder::new(
+    //     ffmpeg::format::Pixel::RGBA,
+    //     video_parameters.1,
+    //     video_parameters.0,
+    // )?;
 
     let audio_parameters = reader.audio_parameters();
 
@@ -153,38 +153,40 @@ where
 
     let (raw_video_queue, raw_audio_queue, _) = reader.spawn(use_reader, paused, unpause);
 
-    let (rendered_video_queue, _video_decoder_handle) = video_decoder.spawn(raw_video_queue);
+    // let (rendered_video_queue, _video_decoder_handle) = video_decoder.spawn(raw_video_queue);
     let (rendered_audio_queue, _audio_decoder_handle) = audio_decoder.spawn(raw_audio_queue);
 
-    let start = std::time::Instant::now();
+    // let start = std::time::Instant::now();
+
+    // let _ = tokio::spawn(async move {
+    //     loop {
+    //         let video_frame = rendered_video_queue.pop().await;
+    //         let callback = sample_callback.clone();
+
+    //         let startdur = start.elapsed();
+    //         let frame_tiem = Duration::from(video_frame.time());
+    //         if frame_tiem > startdur {
+    //             let deadline = tokio::time::Instant::now() + (frame_tiem - startdur);
+
+    //             tokio::time::sleep_until(deadline).await;
+    //         }
+    //         send_frame(callback, video_frame)
+    //     }
+    // });
 
     let _ = tokio::spawn(async move {
-        loop {
-            let video_frame = rendered_video_queue.pop().await;
-            let callback = sample_callback.clone();
+        let audio_handler = audio_handler;
+        let queue = audio_handler.get_queue();
+        let (stream, _) = audio_handler.spawn();
 
-            let startdur = start.elapsed();
-            let frame_tiem = Duration::from(video_frame.time());
-            if frame_tiem > startdur {
-                let deadline = tokio::time::Instant::now() + (frame_tiem - startdur);
-
-                tokio::time::sleep_until(deadline).await;
-            }
-            send_frame(callback, video_frame)
-        }
-    });
-
-    let _ = tokio::spawn(async move {
         loop {
             let audio_frame = rendered_audio_queue.pop().await;
-            println!("planes: {}", audio_frame.planes());
+
+            let data = audio_frame.data(0).to_type::<f32>();
+            for x in data.iter() {
+                queue.push(*x).await;
+            }
         }
-        // (0..audio_frame.planes()).into_iter().for_each(|index| {
-        //     let data = audio_frame.data(index);
-        //     if data.iter().all(|x| x > &0) {
-        //         println!("data: {:?}", data);
-        //     }
-        // });
     });
 
     Ok(())
