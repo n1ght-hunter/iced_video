@@ -128,7 +128,7 @@ fn log_filter_hacks(line: &str) -> bool {
 }
 
 /// Convert a `ffmpeg::Frame` to a `Frame` struct.
-pub fn convert_frame_to_vec_rgba(frame: &mut ffmpeg::Frame) -> Result<Frame, Error> {
+pub fn convert_frame_to_image_handle(frame: &mut ffmpeg::Frame) -> Result<Frame, Error> {
     let frame_width = frame.width();
     let frame_height = frame.height();
     let frame_format = frame.format();

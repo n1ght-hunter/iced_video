@@ -4,7 +4,7 @@ use ffmpeg::{codec, Packet, Rational};
 use tracing::{error, debug, info};
 
 use crate::{
-    ffi::{convert_frame_to_vec_rgba, copy_frame_props, set_decoder_context_time_base},
+    ffi::{convert_frame_to_image_handle, copy_frame_props, set_decoder_context_time_base},
     helpers::{time::Time, types::Frame, image::VideoFrame},
     render_queue::Queue,
 };
@@ -128,7 +128,7 @@ impl VideoDecoder {
         // what the encoder will use when encoding for the `PTS` field.
         let timestamp = Time::new(Some(frame.packet().dts), self.decoder_time_base);
         let frame =
-            convert_frame_to_vec_rgba(&mut frame).map_err(VideoDecoderError::ConvertToRgb)?;
+            convert_frame_to_image_handle(&mut frame).map_err(VideoDecoderError::ConvertToRgb)?;
 
         Ok((timestamp, frame))
     }
