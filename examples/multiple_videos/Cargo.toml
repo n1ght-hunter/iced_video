@@ -6,7 +6,7 @@ version = "0.1.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-video_player = {path = "../../", package = "iced_pure_video_player"}
+iced_video = {path = "../../"}
 [dependencies.iced]
 features = ["tokio", "debug", "image"]
-version = "0.6"
+version = "0.9"

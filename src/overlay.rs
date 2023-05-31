@@ -1,3 +1,6 @@
+//! A widget that overlays another widget with a modal.
+//! this is used to overlay the video controls on top of the video.
+
 use iced_native::alignment::Alignment;
 use iced_native::widget::{self, Tree};
 use iced_native::{
@@ -5,6 +8,8 @@ use iced_native::{
     Point, Rectangle, Shell, Size, Widget,
 };
 
+/// A widget that overlays another widget with a modal.
+#[allow(missing_debug_implementations)]
 pub struct Overlay<'a, Message, Renderer> {
     base: Element<'a, Message, Renderer>,
     modal: Element<'a, Message, Renderer>,
@@ -127,11 +132,12 @@ where
         &self,
         state: &mut Tree,
         layout: Layout<'_>,
+        renderer: &Renderer,
         operation: &mut dyn widget::Operation<Message>,
     ) {
         self.base
             .as_widget()
-            .operate(&mut state.children[0], layout, operation);
+            .operate(&mut state.children[0], layout, renderer, operation);
     }
 }
 
@@ -170,7 +176,7 @@ where
         clipboard: &mut dyn Clipboard,
         shell: &mut Shell<'_, Message>,
     ) -> event::Status {
-        let content_bounds = layout.children().next().unwrap().bounds();
+        let _content_bounds = layout.children().next().unwrap().bounds();
 
         self.content.as_widget_mut().on_event(
             self.tree,
@@ -215,10 +221,18 @@ where
         );
     }
 
-    fn operate(&mut self, layout: Layout<'_>, operation: &mut dyn widget::Operation<Message>) {
-        self.content
-            .as_widget()
-            .operate(self.tree, layout.children().next().unwrap(), operation);
+    fn operate(
+        &mut self,
+        layout: Layout<'_>,
+        renderer: &Renderer,
+        operation: &mut dyn widget::Operation<Message>,
+    ) {
+        self.content.as_widget().operate(
+            self.tree,
+            layout.children().next().unwrap(),
+            renderer,
+            operation,
+        );
     }
 
     fn mouse_interaction(

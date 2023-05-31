@@ -1,29 +1,30 @@
 use iced::{
     executor,
-    widget::{self, container, image, text},
-    Application, Command,
+    widget::{self, container},
+    Application, Command, Element,
 };
-use video_player::{
-    iced_subscription::{video_subscription, SubMSG},
-    player::{VideoPlayer, VideoSettings},
+use iced_video::{
+    player_handler::PlayerHandler,
     viewer::{video_view, ControlEvent},
+    PlayerBackend, PlayerBuilder, PlayerMessage,
 };
 
 fn main() {
-    std::env::set_var("GST_DEBUG", "3");
+    // uncomment to see debug messages from gstreamer
+    // std::env::set_var("GST_DEBUG", "3");
     App::run(Default::default()).unwrap();
 }
 
 #[derive(Clone, Debug)]
 enum Message {
-    Video(SubMSG),
+    Video(PlayerMessage),
     ControlEvent(ControlEvent),
 }
 
 struct App {
-    video_players: Option<VideoPlayer>,
-    frame: Option<image::Handle>,
+    player_handler: PlayerHandler,
     seek: Option<u64>,
+    id: String,
 }
 
 impl Application for App {
@@ -36,26 +37,23 @@ impl Application for App {
     type Flags = ();
 
     fn new(_flags: Self::Flags) -> (Self, iced::Command<Self::Message>) {
+        let mut player_handler = PlayerHandler::default();
+        let url =
+            "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
+        player_handler.start_player(PlayerBuilder::new(url).set_auto_start(true).set_uri(url));
+
         (
             App {
-                video_players: None,
-                frame: None,
+                player_handler,
                 seek: None,
+                id: url.to_string(),
             },
             Command::none(),
         )
     }
 
     fn subscription(&self) -> iced::Subscription<Self::Message> {
-        video_subscription(
-            "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-            VideoSettings {
-                auto_start: true,
-                uri: Some("http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4".to_string()),
-                ..Default::default()
-            },
-        )
-        .map(Message::Video)
+        self.player_handler.subscriptions().map(Message::Video)
     }
 
     fn title(&self) -> String {
@@ -64,38 +62,37 @@ impl Application for App {
 
     fn update(&mut self, message: Self::Message) -> iced::Command<Self::Message> {
         match message {
-            Message::Video(event) => match event {
-                SubMSG::Image(_id, image) => {
-                    self.frame = Some(image);
-                }
-                SubMSG::Message(_id, message) => {
+            Message::Video(event) => {
+                if let Some((_player_id, message)) = self.player_handler.handle_event(event) {
                     println!("message: {:?}", message);
-                    match message {
-                        _ => (),
-                    }
                 }
-                SubMSG::Player(_id, player) => self.video_players = Some(player),
-            },
+            }
             Message::ControlEvent(event) => {
-                let player = self.video_players.as_mut().unwrap();
-
-                match event {
-                    ControlEvent::Play => player.set_playing_state(true),
-                    ControlEvent::Pause => player.set_playing_state(false),
-                    ControlEvent::ToggleMute => {
-                        if player.muted() {
-                            player.set_muted(false)
-                        } else {
-                            player.set_muted(true)
+                if let Some(player) = self.player_handler.get_player_mut(&self.id) {
+                    match event {
+                        ControlEvent::Play => player
+                            .set_paused(false)
+                            .unwrap_or_else(|err| println!("Error seting paused state: {:?}", err)),
+                        ControlEvent::Pause => player
+                            .set_paused(true)
+                            .unwrap_or_else(|err| println!("Error seting paused state: {:?}", err)),
+                        ControlEvent::ToggleMute => {
+                            if player.get_muted() {
+                                player.set_muted(false)
+                            } else {
+                                player.set_muted(true)
+                            }
                         }
-                    }
-                    ControlEvent::Volume(volume) => player.set_volume(volume),
-                    ControlEvent::Seek(p) => {
-                        self.seek = Some(p as u64);
-                    }
-                    ControlEvent::Released => {
-                        player.seek(self.seek.unwrap()).unwrap_or_else(|_| ());
-                        self.seek = None;
+                        ControlEvent::Volume(volume) => player.set_volume(volume),
+                        ControlEvent::Seek(p) => {
+                            self.seek = Some(p as u64);
+                        }
+                        ControlEvent::Released => {
+                            player
+                                .seek(std::time::Duration::from_secs(self.seek.unwrap()))
+                                .unwrap_or_else(|err| println!("Error seeking: {:?}", err));
+                            self.seek = None;
+                        }
                     }
                 }
             }
@@ -104,15 +101,14 @@ impl Application for App {
     }
 
     fn view(&self) -> iced::Element<Message> {
-        let player: iced::Element<Message> = if let Some(player) = &self.video_players {
-            video_view(player, &self.frame, &Message::ControlEvent, &self.seek).into()
-        } else {
-            text("no vid").into()
-        };
+        let player: Element<Message> =
+            if let Some(player) = self.player_handler.get_player(&self.id) {
+                let frame = self.player_handler.get_frame(&self.id);
+                video_view(player, frame, &Message::ControlEvent, &self.seek).into()
+            } else {
+                widget::Text::new("No player").size(30).into()
+            };
 
-        container(widget::column![player])
-            .center_x()
-            .center_y()
-            .into()
+        container(player).center_x().center_y().into()
     }
 }
