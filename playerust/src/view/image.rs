@@ -35,7 +35,7 @@ pub fn image(state: &State) -> Element {
         widget::container::Appearance {
             text_color: None,
             background: Some(Background::Color(Color::BLACK)),
-            border_radius: 0.0,
+            border_radius: 0.0.into(),
             border_width: 0.0,
             border_color: Color::WHITE,
         }

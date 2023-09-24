@@ -27,11 +27,12 @@ impl slider::StyleSheet for Theme {
                 rail: Rail {
                     colors: (self.light_blue, self.light_blue),
                     width: 2.0,
+                    border_radius: 0.0.into(),
                 },
                 handle: slider::Handle {
                     shape: slider::HandleShape::Rectangle {
                         width: 8,
-                        border_radius: 4.0,
+                        border_radius: 4.0.into(),
                     },
                     color: Color::WHITE,
                     border_color: Color::WHITE,
@@ -43,6 +44,7 @@ impl slider::StyleSheet for Theme {
                 rail: Rail {
                     colors: (self.light_blue, color!(143, 143, 143)),
                     width: 2.0,
+                    border_radius: 0.0.into(),
                 },
                 handle: slider::Handle {
                     shape: slider::HandleShape::Circle { radius: 7.5 },
@@ -55,6 +57,7 @@ impl slider::StyleSheet for Theme {
                 rail: Rail {
                     colors: (self.green, color!(143, 143, 143)),
                     width: 2.0,
+                    border_radius: 0.0.into(),
                 },
                 handle: slider::Handle {
                     shape: slider::HandleShape::Circle { radius: 7.5 },

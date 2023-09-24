@@ -104,7 +104,7 @@ pub fn controls(state: &State) -> Element {
         widget::container::Appearance {
             text_color: None,
             background: Some(Background::Color(color!(242, 241, 236))),
-            border_radius: 0.0,
+            border_radius: 0.0.into(),
             border_width: 0.0,
             border_color: Color::WHITE,
         }

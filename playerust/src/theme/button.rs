@@ -14,9 +14,9 @@ impl button::StyleSheet for Theme {
 
     fn active(&self, style: &Button) -> button::Appearance {
         let auto_fill = |background: Color, text: Color| button::Appearance {
-            background: background.into(),
+            background: Some(background.into()),
             text_color: text,
-            border_radius: 2.0,
+            border_radius: 2.0.into(),
             ..button::Appearance::default()
         };
 
@@ -58,6 +58,7 @@ impl button::StyleSheet for Theme {
                     a: color.a * 0.5,
                     ..color
                 }),
+                iced::Background::Gradient(gradient) => gradient.into(),
             }),
             text_color: Color {
                 a: active.text_color.a * 0.5,
