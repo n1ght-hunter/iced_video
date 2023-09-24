@@ -13,4 +13,4 @@ log = "0.4.17"
 
 [dependencies.iced]
 features = ["tokio", "debug", "image", "svg", "canvas"]
-version = "0.9"
+version = "0.10"

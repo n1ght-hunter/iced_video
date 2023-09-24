@@ -27,8 +27,8 @@ impl container::StyleSheet for Theme {
             Container::Transparent => Default::default(),
             Container::Box => container::Appearance {
                 text_color: None,
-                background: self.background.into(),
-                border_radius: 2.0,
+                background: Some(self.background.into()),
+                border_radius: 2.0.into(),
                 border_width: 0.0,
                 border_color: Color::BLACK,
             },

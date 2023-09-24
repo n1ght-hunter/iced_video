@@ -1,6 +1,6 @@
 //! VideoSettings is used to configure the player before it is created
 
-use iced::futures::SinkExt;
+use iced::futures::{SinkExt, self};
 
 use crate::{Player, PlayerMessage};
 
@@ -51,7 +51,7 @@ impl PlayerBuilder {
                                 let _ = sender.send(message).await;
                             }
                             None => {
-                                iced_futures::futures::pending!()
+                                futures::pending!()
                             }
                         }
                     }
