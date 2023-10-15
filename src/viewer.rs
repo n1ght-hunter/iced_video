@@ -116,7 +116,7 @@ where
     .on_release(on_event(ControlEvent::Released).clone())
     .step(1.0);
 
-    let orverlay = container(widget::column![
+    let overlay = container(widget::column![
         seek_slider,
         widget::row![play_pause, duration_text, volume_button, volume_slider]
             .width(Length::Fill)
@@ -128,6 +128,6 @@ where
     .width(*width)
     .height(*height);
 
-    let content = Overlay::new(container(image).width(*width).height(*height), orverlay);
+    let content = Overlay::new(container(image).width(*width).height(*height), overlay);
     container(content).into()
 }
