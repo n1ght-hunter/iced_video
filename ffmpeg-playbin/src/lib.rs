@@ -1,21 +1,23 @@
-mod error;
-pub mod ffi;
-pub mod helpers;
-pub mod decoder;
-pub mod playbin;
-pub mod reader;
-mod render_queue;
-mod audio;
-pub use tokio;
-pub use tracing;
+pub mod playbins;
+pub mod player;
 
-/// Initialize global ffmpeg settings. This also intializes the
-/// logging capability and redirect it to `tracing`.
-pub fn init() -> Result<(), ffmpeg::Error> {
-    ffmpeg::init()?;
 
-    // Redirect logging to the Rust `tracing` crate.
-    ffi::create_ffmpeg_logger();
+// // Work around https://github.com/zmwangx/rust-ffmpeg/issues/102
+// #[derive(derive_more::Deref, derive_more::DerefMut)]
+// struct Rescaler(ffmpeg::software::scaling::Context);
+// unsafe impl std::marker::Send for Rescaler {}
 
-    Ok(())
-}
+// fn rgba_rescaler_for_frame(frame: &ffmpeg::util::frame::Video) -> Rescaler {
+//     Rescaler(
+//         ffmpeg::software::scaling::Context::get(
+//             frame.format(),
+//             frame.width(),
+//             frame.height(),
+//             ffmpeg::format::Pixel::RGB24,
+//             frame.width(),
+//             frame.height(),
+//             ffmpeg::software::scaling::Flags::BILINEAR,
+//         )
+//         .unwrap(),
+//     )
+// }
