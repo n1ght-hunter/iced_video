@@ -1,7 +1,14 @@
 //! A widget that overlays another widget with a modal.
 //! this is used to overlay the video controls on top of the video.
 
-use iced::{Element, advanced::{Widget, widget::{Tree, self}, Layout, Clipboard, Shell, layout, renderer, overlay, mouse}, Length, Event, Point, event, Rectangle, Size, Alignment, BorderRadius, Color};
+use iced::{
+    advanced::{
+        layout, overlay, renderer,
+        widget::{self, Tree},
+        Clipboard, Layout, Shell, Widget,
+    },
+    event, mouse, Alignment, BorderRadius, Color, Element, Event, Length, Point, Rectangle, Size,
+};
 
 /// A widget that overlays another widget with a modal.
 #[allow(missing_debug_implementations)]
@@ -53,7 +60,7 @@ where
         state: &mut Tree,
         event: Event,
         layout: Layout<'_>,
-        cursor_position: mouse::Cursor,
+        cursor_position: iced::mouse::Cursor,
         renderer: &Renderer,
         clipboard: &mut dyn Clipboard,
         shell: &mut Shell<'_, Message>,
@@ -78,7 +85,7 @@ where
         theme: &<Renderer as iced::advanced::Renderer>::Theme,
         style: &renderer::Style,
         layout: Layout<'_>,
-        cursor_position: mouse::Cursor,
+        cursor_position: iced::mouse::Cursor,
         viewport: &Rectangle,
     ) {
         self.base.as_widget().draw(
@@ -112,7 +119,7 @@ where
         &self,
         state: &Tree,
         layout: Layout<'_>,
-        cursor_position: mouse::Cursor,
+        cursor_position: iced::mouse::Cursor,
         viewport: &Rectangle,
         renderer: &Renderer,
     ) -> mouse::Interaction {
@@ -168,7 +175,7 @@ where
         &mut self,
         event: Event,
         layout: Layout<'_>,
-        cursor_position: mouse::Cursor,
+        cursor_position: iced::mouse::Cursor,
         renderer: &Renderer,
         clipboard: &mut dyn Clipboard,
         shell: &mut Shell<'_, Message>,
@@ -196,7 +203,7 @@ where
         theme: &Renderer::Theme,
         style: &renderer::Style,
         layout: Layout<'_>,
-        cursor_position: mouse::Cursor,
+        cursor_position: iced::mouse::Cursor,
     ) {
         renderer.fill_quad(
             renderer::Quad {
@@ -239,7 +246,7 @@ where
     fn mouse_interaction(
         &self,
         layout: Layout<'_>,
-        cursor_position: mouse::Cursor,
+        cursor_position: iced::mouse::Cursor,
         viewport: &Rectangle,
         renderer: &Renderer,
     ) -> mouse::Interaction {

@@ -6,7 +6,7 @@ use iced::{
 use iced_video::{
     player_handler::PlayerHandler,
     viewer::{video_view, ControlEvent},
-    PlayerBackend, PlayerBuilder, PlayerMessage,
+    PlayerBuilder, PlayerMessage, BasicPlayer, AdvancedPlayer,
 };
 
 fn main() {
@@ -17,12 +17,12 @@ fn main() {
 
 #[derive(Clone, Debug)]
 enum Message {
-    Video(PlayerMessage),
+    Video(PlayerMessage<iced_video::Player>),
     ControlEvent(ControlEvent),
 }
 
 struct App {
-    player_handler: PlayerHandler,
+    player_handler: PlayerHandler<iced_video::Player>,
     seek: Option<u64>,
     id: String,
 }
@@ -63,19 +63,15 @@ impl Application for App {
     fn update(&mut self, message: Self::Message) -> iced::Command<Self::Message> {
         match message {
             Message::Video(event) => {
-                if let Some((_player_id, message)) = self.player_handler.handle_event(event) {
-                    println!("message: {:?}", message);
-                }
+                self.player_handler.handle_event(event);
             }
             Message::ControlEvent(event) => {
                 if let Some(player) = self.player_handler.get_player_mut(&self.id) {
                     match event {
                         ControlEvent::Play => player
-                            .set_paused(false)
-                            .unwrap_or_else(|err| println!("Error seting paused state: {:?}", err)),
+                            .play(),
                         ControlEvent::Pause => player
-                            .set_paused(true)
-                            .unwrap_or_else(|err| println!("Error seting paused state: {:?}", err)),
+                            .pause(),
                         ControlEvent::ToggleMute => {
                             if player.get_muted() {
                                 player.set_muted(false)

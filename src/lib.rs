@@ -24,28 +24,17 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
 mod backends;
-mod player_builder;
 
 pub mod helpers;
 pub mod overlay;
 pub mod player_handler;
 pub mod viewer;
 
-pub use helpers::player_backend::PlayerBackend;
-pub use player_builder::PlayerBuilder;
+pub use playbin_core::*;
 
-#[cfg(all(feature = "gstreamer", not(target_arch = "wasm32")))]
-pub use backends::gstreamer::tag_convert;
+#[cfg(all(feature = "gstreamer", not(feature = "ffmpeg")))]
+pub use gstreamer_playbin::*;
 
-/// gstreamer modules that are only available when the gstreamer feature is enabled
-#[cfg(all(feature = "gstreamer", not(target_arch = "wasm32")))]
-pub mod gstreamer {
+#[cfg(all(feature = "ffmpeg", not(feature = "gstreamer")))]
+pub use ffmpeg_playbin::*;
 
-    pub use gst::{MessageView, DateTime};
-}
-
-#[cfg(all(feature = "gstreamer", not(target_arch = "wasm32")))]
-pub use backends::gstreamer::GstreamerBackend as Player;
-
-#[cfg(all(feature = "gstreamer", not(target_arch = "wasm32")))]
-pub use backends::gstreamer::GstreamerMessage as PlayerMessage;

@@ -1,0 +1,14 @@
+[package]
+edition = "2021"
+name = "ffmpeg-basic"
+version = "0.1.0"
+
+[dependencies]
+iced_video = {path = "../../"}
+ffmpeg_playbin = {package = "ffmpeg-playbin",  version = "0.1.0", path = "../../ffmpeg-playbin" }
+tracing-subscriber = "0.3.17"
+
+
+[dependencies.iced]
+features = ["tokio", "debug", "image", "svg", "canvas"]
+version = "0.10"
