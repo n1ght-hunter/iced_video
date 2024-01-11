@@ -32,9 +32,16 @@ pub mod viewer;
 
 pub use playbin_core::*;
 
-#[cfg(all(feature = "gstreamer", not(feature = "ffmpeg")))]
-pub use gstreamer_playbin::*;
+#[cfg(feature = "gstreamer")]
+pub use gstreamer_playbin;
 
+#[cfg(feature = "ffmpeg")]
+pub use ffmpeg_playbin;
+
+/// Default player type
+#[cfg(feature = "gstreamer")]
+pub type Player = gstreamer_playbin::Player;
+
+/// Default player type
 #[cfg(all(feature = "ffmpeg", not(feature = "gstreamer")))]
-pub use ffmpeg_playbin::*;
-
+pub type Player = ffmpeg_playbin::Player;

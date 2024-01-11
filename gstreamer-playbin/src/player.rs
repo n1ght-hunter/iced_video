@@ -195,7 +195,7 @@ impl BasicPlayer for Player {
         Self::new(player_builder)
     }
 
-    fn set_source(&mut self, uri: &std::path::Path) -> Result<(), Self::Error> {
+    fn set_source(&mut self, uri: &std::path::PathBuf) -> Result<(), Self::Error> {
         info!("Setting source to {:?}", uri);
         self.playbin.set_property("uri", &uri);
 

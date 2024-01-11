@@ -6,7 +6,7 @@ use iced::{
 use iced_video::{
     player_handler::PlayerHandler,
     viewer::{video_view, ControlEvent},
-    PlayerBuilder, PlayerMessage, BasicPlayer, AdvancedPlayer,
+    AdvancedPlayer, BasicPlayer, PlayerBuilder, PlayerMessage,
 };
 
 fn main() {
@@ -17,12 +17,12 @@ fn main() {
 
 #[derive(Clone, Debug)]
 enum Message {
-    Video(PlayerMessage<iced_video::Player>),
+    Video(PlayerMessage<iced_video::ffmpeg_playbin::player::Player>),
     ControlEvent(ControlEvent),
 }
 
 struct App {
-    player_handler: PlayerHandler<iced_video::Player>,
+    player_handler: PlayerHandler<iced_video::ffmpeg_playbin::player::Player>,
     seek: Option<u64>,
     id: String,
 }
@@ -68,25 +68,25 @@ impl Application for App {
             Message::ControlEvent(event) => {
                 if let Some(player) = self.player_handler.get_player_mut(&self.id) {
                     match event {
-                        ControlEvent::Play => player
-                            .play(),
-                        ControlEvent::Pause => player
-                            .pause(),
+                        ControlEvent::Play => player.play(),
+                        ControlEvent::Pause => player.pause(),
                         ControlEvent::ToggleMute => {
-                            if player.get_muted() {
-                                player.set_muted(false)
-                            } else {
-                                player.set_muted(true)
-                            }
+                            // if player.get_muted() {
+                            //     player.set_muted(false)
+                            // } else {
+                            //     player.set_muted(true)
+                            // }
                         }
-                        ControlEvent::Volume(volume) => player.set_volume(volume),
+                        ControlEvent::Volume(volume) => {
+                            // player.set_volume(volume)
+                        },
                         ControlEvent::Seek(p) => {
                             self.seek = Some(p as u64);
                         }
                         ControlEvent::Released => {
-                            player
-                                .seek(std::time::Duration::from_secs(self.seek.unwrap()))
-                                .unwrap_or_else(|err| println!("Error seeking: {:?}", err));
+                            // player
+                            //     .seek(std::time::Duration::from_secs(self.seek.unwrap()))
+                            //     .unwrap_or_else(|err| println!("Error seeking: {:?}", err));
                             self.seek = None;
                         }
                     }
@@ -97,13 +97,24 @@ impl Application for App {
     }
 
     fn view(&self) -> iced::Element<Message> {
-        let player: Element<Message> =
-            if let Some(player) = self.player_handler.get_player(&self.id) {
-                let frame = self.player_handler.get_frame(&self.id);
-                video_view(player, frame, &Message::ControlEvent, &self.seek).into()
+        let player: Element<Message> = if let Some(player) =
+            self.player_handler.get_player(&self.id)
+        {
+            let frame = self.player_handler.get_frame(&self.id);
+            if let Some(handle) = frame {
+                let i_width = 1280 as u16;
+                let i_height = (i_width as f32 * 9.0 / 16.0) as u16;
+                iced::widget::image(handle.clone())
+                    .height(i_height)
+                    .width(i_width)
+                    .into()
             } else {
-                widget::Text::new("No player").size(30).into()
-            };
+                iced::widget::image(iced::widget::image::Handle::from_pixels(0, 0, vec![])).into()
+            }
+            // video_view(player, frame, &Message::ControlEvent, &self.seek).into()
+        } else {
+            widget::Text::new("No player").size(30).into()
+        };
 
         container(player).center_x().center_y().into()
     }

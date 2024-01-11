@@ -17,9 +17,10 @@ pub enum ControlCommand {
     Pause,
 }
 
+#[derive(Clone, Debug)]
 pub struct Player {
     control_sender: Option<smol::channel::Sender<ControlCommand>>,
-    demuxer_thread: Option<std::thread::JoinHandle<()>>,
+    demuxer_thread: Option<Arc<std::thread::JoinHandle<()>>>,
     playing: bool,
     // playing_changed_callback: Box<dyn Fn(bool)>,
     event_sender: smol::channel::Sender<PlayerMessage<Self>>,
@@ -27,7 +28,9 @@ pub struct Player {
 }
 
 impl Player {
-    pub fn start(player_builder: PlayerBuilder) -> (Self, smol::channel::Receiver<PlayerMessage<Self>>) {
+    pub fn start(
+        player_builder: PlayerBuilder,
+    ) -> (Self, smol::channel::Receiver<PlayerMessage<Self>>) {
         let (event_sender, event_receiver) = smol::channel::unbounded();
         let playing = true;
         // playing_changed_callback(playing);
@@ -54,7 +57,7 @@ impl Player {
 
         let id = self.player_builder.id.clone();
 
-        self.demuxer_thread = Some(std::thread::Builder::new()
+        self.demuxer_thread = Some(Arc::new(std::thread::Builder::new()
             .name("demuxer thread".into())
             .spawn(move || {
                 smol::block_on(async move {
@@ -158,7 +161,7 @@ impl Player {
                         }
                     }
                 })
-            })?);
+            })?));
 
         Ok(())
     }
@@ -190,7 +193,7 @@ impl Drop for Player {
             control_sender.close();
         }
         if let Some(decoder_thread) = self.demuxer_thread.take() {
-            decoder_thread.join().unwrap();
+            Arc::try_unwrap(decoder_thread).unwrap().join().unwrap();
         }
     }
 }
@@ -202,10 +205,14 @@ impl BasicPlayer for Player {
     where
         Self: Sized,
     {
-        Self::start(player_builder)
+        let mut player =Self::start(player_builder.clone());
+        if player_builder.auto_start && player_builder.uri.is_some() {
+            player.0.set_source(&player_builder.uri.unwrap()).unwrap();
+        }
+        player
     }
 
-    fn set_source(&mut self, uri: &std::path::Path) -> Result<(), Self::Error> {
+    fn set_source(&mut self, uri: &std::path::PathBuf) -> Result<(), Self::Error> {
         self.new_source(uri.to_owned())
     }
 
@@ -223,7 +230,7 @@ impl BasicPlayer for Player {
 
     fn stop(&mut self) {
         if let Some(demuxer_thread) = self.demuxer_thread.take() {
-            demuxer_thread.join().unwrap();
+            Arc::try_unwrap(demuxer_thread).unwrap().join().unwrap();
         }
     }
 

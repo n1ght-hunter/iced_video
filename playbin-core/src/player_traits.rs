@@ -1,4 +1,4 @@
-use std::{path::Path, time::Duration};
+use std::{path::PathBuf, time::Duration};
 
 use crate::{PlayerBuilder, PlayerMessage};
 
@@ -11,7 +11,7 @@ pub trait BasicPlayer {
         Self: Sized;
 
     /// Set the source of the player
-    fn set_source(&mut self, uri: &Path) -> Result<(), Self::Error>
+    fn set_source(&mut self, uri: &PathBuf) -> Result<(), Self::Error>
     where
         Self: Sized;
 
