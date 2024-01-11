@@ -5,7 +5,7 @@ use std::{path::PathBuf, sync::Arc};
 
 use ffmpeg::frame::Video;
 use futures::{future::OptionFuture, FutureExt};
-use playbin_core::BasicPlayer;
+use playbin_core::{BasicPlayer, PlayerBuilder, PlayerMessage};
 use smol::lock::Mutex;
 
 mod audio;
@@ -17,23 +17,17 @@ pub enum ControlCommand {
     Pause,
 }
 
-pub enum Event {
-    Frame(ffmpeg::util::frame::Video),
-}
-
 pub struct Player {
     control_sender: Option<smol::channel::Sender<ControlCommand>>,
     demuxer_thread: Option<std::thread::JoinHandle<()>>,
     playing: bool,
     // playing_changed_callback: Box<dyn Fn(bool)>,
-    event_sender: smol::channel::Sender<Event>,
+    event_sender: smol::channel::Sender<PlayerMessage<Self>>,
+    player_builder: PlayerBuilder,
 }
 
 impl Player {
-    pub fn start(// path: PathBuf,
-        // video_frame_callback: impl FnMut(&ffmpeg::util::frame::Video) + Send + 'static,
-        // playing_changed_callback: impl Fn(bool) + 'static,
-    ) -> (Self, smol::channel::Receiver<Event>) {
+    pub fn start(player_builder: PlayerBuilder) -> (Self, smol::channel::Receiver<PlayerMessage<Self>>) {
         let (event_sender, event_receiver) = smol::channel::unbounded();
         let playing = true;
         // playing_changed_callback(playing);
@@ -45,6 +39,7 @@ impl Player {
                 playing,
                 // playing_changed_callback: Box::new(playing_changed_callback),
                 event_sender,
+                player_builder,
             },
             event_receiver,
         )
@@ -56,6 +51,8 @@ impl Player {
         let event_sender = self.event_sender.clone();
 
         self.control_sender = Some(control_sender);
+
+        let id = self.player_builder.id.clone();
 
         self.demuxer_thread = Some(std::thread::Builder::new()
             .name("demuxer thread".into())
@@ -87,7 +84,7 @@ impl Player {
                             let mut rgb_frame = ffmpeg::util::frame::Video::empty();
                             rescaler.run(&frame, &mut rgb_frame).unwrap();
 
-                            if let Err(e) = event_sender.try_send(Event::Frame(rgb_frame)) {
+                            if let Err(e) = event_sender.try_send(PlayerMessage::Frame(id.clone(),crate::frame_to_image_handle(&rgb_frame))) {
                                 println!("Error sending frame: {:?}", e);
                             }
                         }),
@@ -199,12 +196,17 @@ impl Drop for Player {
 }
 
 impl BasicPlayer for Player {
-    fn new() -> Self {
-        Self::start().0
+    type Error = anyhow::Error;
+
+    fn create(player_builder: PlayerBuilder) -> (Self, smol::channel::Receiver<PlayerMessage<Self>>)
+    where
+        Self: Sized,
+    {
+        Self::start(player_builder)
     }
 
-    fn set_source(&mut self, uri: &std::path::Path) {
-        self.new_source(uri.to_owned()).unwrap();
+    fn set_source(&mut self, uri: &std::path::Path) -> Result<(), Self::Error> {
+        self.new_source(uri.to_owned())
     }
 
     fn play(&self) {

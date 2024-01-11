@@ -7,12 +7,13 @@ version = "0.1.0"
 
 [dependencies]
 anyhow = "1"
-derive_more = "*"
-gst = {package = "gstreamer", version = "0.20", features = ["serde"]}
-gst_app = {package = "gstreamer-app", version = "0.20"}
-gst_video = {package = "gstreamer-video", version = "0.20"}
-log = "0.4"
 tokio = {version = "1.24.2", features = ["sync"]}
+tracing = "0.1"
+
+playbin-core = {path = "./playbin-core"}
+
+ffmpeg-playbin = {path = "./ffmpeg-playbin", optional = true}
+gstreamer-playbin = {path = "./gstreamer-playbin", optional = true}
 
 [dependencies.iced]
 features = ["tokio", "debug", "image", "svg", "advanced"]
@@ -23,9 +24,12 @@ members = [
   "playerust",
   "examples/*",
   "ffmpeg-playbin",
+  "gstreamer-playbin",
   "playbin-core",
 ]
 
 [features]
 default = ["gstreamer"]
-gstreamer = []
+gstreamer = ["gstreamer-playbin"]
+ffmpeg = ["ffmpeg-playbin"]
+

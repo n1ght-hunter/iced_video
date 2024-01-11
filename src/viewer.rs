@@ -2,15 +2,16 @@
 //! displays the video and the overlay
 use iced::{
     advanced::{layout, overlay, renderer, widget::Tree, Clipboard, Layout, Shell, Widget},
+    alignment::{Horizontal, Vertical},
     event, mouse,
-    widget::{self, image, svg, text, container},
-    Alignment, BorderRadius, Color, Element, Event, Length, Point, Rectangle, Size, alignment::{Vertical, Horizontal},
+    widget::{self, container, image, svg, text},
+    Alignment, BorderRadius, Color, Element, Event, Length, Point, Rectangle, Size,
 };
+use playbin_core::AdvancedPlayer;
 
 use crate::{
     helpers::{helper_functions::secs_to_hhmmss, svgs},
     overlay::Overlay,
-    Player, PlayerBackend,
 };
 
 /// viewer event enum
@@ -26,14 +27,14 @@ pub enum ControlEvent {
 }
 
 /// a viewer fuction to make an over easyliy
-pub fn video_view<'a, Message, Renderer, F>(
-    player: &'a Player,
+pub fn video_view<'a, Message, Renderer, F, P>(
+    player: &'a P,
     frame: Option<&'a image::Handle>,
     on_event: &'a F,
     seek_amount: &'a Option<u64>,
 ) -> iced::Element<'a, Message, Renderer>
 where
-    Player: PlayerBackend,
+    P: AdvancedPlayer,
     Message: std::clone::Clone + 'a,
     Renderer: iced::advanced::text::Renderer
         + iced::advanced::image::Renderer
@@ -68,13 +69,13 @@ where
         player.get_position().as_secs()
     };
 
-    let play_pause = if player.get_paused() {
-        widget::Button::new(svg(svgs::play_svg()).height(28).width(28))
-            .on_press(on_event(ControlEvent::Play).clone())
-    } else {
+    let play_pause = if player.is_playing() {
         widget::Button::new(svg(svgs::pause_svg()).height(28).width(28))
             // .style(theme::Button::Transparent)
             .on_press(on_event(ControlEvent::Pause).clone())
+    } else {
+        widget::Button::new(svg(svgs::play_svg()).height(28).width(28))
+            .on_press(on_event(ControlEvent::Play).clone())
     };
 
     let duration_text = text(format!(
