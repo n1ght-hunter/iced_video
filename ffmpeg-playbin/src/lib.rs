@@ -1,23 +1,16 @@
-pub mod playbins;
 pub mod player;
 
+pub use playbin_core::*;
 
-// // Work around https://github.com/zmwangx/rust-ffmpeg/issues/102
-// #[derive(derive_more::Deref, derive_more::DerefMut)]
-// struct Rescaler(ffmpeg::software::scaling::Context);
-// unsafe impl std::marker::Send for Rescaler {}
+pub fn frame_to_image_handle(frame: &ffmpeg::util::frame::Video) -> iced::widget::image::Handle {
+    let mut buffer = vec![0; (frame.height() * frame.width() * 4) as usize];
+    let ffmpeg_line_iter = frame.data(0).chunks_exact(frame.stride(0));
 
-// fn rgba_rescaler_for_frame(frame: &ffmpeg::util::frame::Video) -> Rescaler {
-//     Rescaler(
-//         ffmpeg::software::scaling::Context::get(
-//             frame.format(),
-//             frame.width(),
-//             frame.height(),
-//             ffmpeg::format::Pixel::RGB24,
-//             frame.width(),
-//             frame.height(),
-//             ffmpeg::software::scaling::Flags::BILINEAR,
-//         )
-//         .unwrap(),
-//     )
-// }
+    let slint_pixel_line_iter = buffer.chunks_exact_mut(frame.stride(0));
+
+    for (source_line, dest_line) in ffmpeg_line_iter.zip(slint_pixel_line_iter) {
+        dest_line.copy_from_slice(&source_line[..])
+    }
+
+    iced::widget::image::Handle::from_pixels(frame.width() as u32, frame.height() as u32, buffer)
+}

@@ -5,13 +5,11 @@ use std::{path::PathBuf, sync::Arc};
 
 use ffmpeg::frame::Video;
 use futures::{future::OptionFuture, FutureExt};
+use playbin_core::BasicPlayer;
 use smol::lock::Mutex;
-
-use crate::playbins::BasicPlayer;
 
 mod audio;
 mod video;
-pub mod video_frame;
 
 #[derive(Clone, Copy)]
 pub enum ControlCommand {
@@ -169,7 +167,6 @@ impl Player {
     }
 }
 
-
 // Work around https://github.com/zmwangx/rust-ffmpeg/issues/102
 #[derive(derive_more::Deref, derive_more::DerefMut)]
 struct Rescaler(ffmpeg::software::scaling::Context);
@@ -189,8 +186,6 @@ fn rgba_rescaler_for_frame(frame: &ffmpeg::util::frame::Video) -> Rescaler {
         .unwrap(),
     )
 }
-
-
 
 impl Drop for Player {
     fn drop(&mut self) {

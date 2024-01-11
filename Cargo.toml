@@ -23,6 +23,7 @@ members = [
   "playerust",
   "examples/*",
   "ffmpeg-playbin",
+  "playbin-core",
 ]
 
 [features]

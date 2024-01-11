@@ -1,23 +1,15 @@
 use std::path::Path;
 
-use ffmpeg_playbin::{helpers::playbin_trait::PlayBinTrait, tracing::error};
+use ffmpeg_playbin::{player, BasicPlayer};
+
 use iced::{
     executor,
     futures::SinkExt,
-    widget::{self, container},
+    widget::{self, container, image},
     Application, Color, Command, Element, Length,
 };
 
 fn main() {
-    ffmpeg_playbin::tracing::subscriber::set_global_default(
-        tracing_subscriber::FmtSubscriber::builder()
-            .with_max_level(ffmpeg_playbin::tracing::Level::INFO)
-            .finish(),
-    )
-    .expect("setting default subscriber failed");
-
-    ffmpeg_playbin::init().unwrap();
-
     App::run(Default::default()).unwrap();
 }
 
@@ -45,30 +37,27 @@ impl Application for App {
 
     fn subscription(&self) -> iced::Subscription<Self::Message> {
         iced::subscription::channel("some rnado id", 100, |mut ouput| async move {
-            let url = Path::new("assets/Finch.2021.1080p.WEBRip.x264-RARBG.mp4");
-            // let url = Path::new("http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4");
-            let (sender, mut res) = ffmpeg_playbin::tokio::sync::mpsc::channel(100);
-            let mut playbin = ffmpeg_playbin::playbin::PlayBin::new();
+            let (mut player, reciver) = player::Player::start();
 
-            playbin.set_source(url);
-            playbin.set_sample_callback(move |image| {
-                if let Err(err) = sender.blocking_send(image.into_raw_image()) {
-                    error!("error: {:?}", err)
-                }
-            });
-
-            playbin.play();
-
-            while let Some(frame) = res.recv().await {
-                if let Err(err) = ouput.send(Message::Frame(frame)).await {
-                    println!("error: {:?}", err);
-                    break;
-                };
-            }
-            println!("end");
+            let url = Path::new(
+                "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+            );
+            player.set_source(url);
 
             loop {
-                iced::futures::pending!()
+                if let Ok(frame) = reciver.recv().await {
+                    match frame {
+                        player::Event::Frame(mut frame) => {
+                            let pixels = ffmpeg_playbin::frame_to_image_handle(&mut frame);
+                            if let Err(err) = ouput.send(Message::Frame(pixels)).await {
+                                println!("error: {:?}", err);
+                                continue;
+                            };
+                        }
+                    }
+                } else {
+                    iced::futures::pending!()
+                }
             }
         })
     }

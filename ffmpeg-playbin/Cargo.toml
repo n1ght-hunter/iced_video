@@ -16,6 +16,8 @@ anyhow = "1"
 bytemuck = "1"
 derive_more = "0.99"
 
+playbin-core = { path = "../playbin-core" }
+
 [dependencies.iced]
 features = ["tokio", "debug", "image", "svg", "canvas"]
 version = "0.10"
