@@ -1,11 +1,13 @@
 //! A widget that overlays another widget with a modal.
 //! this is used to overlay the video controls on top of the video.
 
-use iced_native::alignment::Alignment;
-use iced_native::widget::{self, Tree};
-use iced_native::{
-    event, layout, mouse, overlay, renderer, Clipboard, Color, Element, Event, Layout, Length,
-    Point, Rectangle, Shell, Size, Widget,
+use iced::{
+    advanced::{
+        layout, overlay, renderer,
+        widget::{self, Tree},
+        Clipboard, Layout, Shell, Widget,
+    },
+    event, mouse, Alignment, BorderRadius, Color, Element, Event, Length, Point, Rectangle, Size,
 };
 
 /// A widget that overlays another widget with a modal.
@@ -30,7 +32,7 @@ impl<'a, Message, Renderer> Overlay<'a, Message, Renderer> {
 
 impl<'a, Message, Renderer> Widget<Message, Renderer> for Overlay<'a, Message, Renderer>
 where
-    Renderer: iced_native::Renderer,
+    Renderer: iced::advanced::Renderer,
     Message: Clone,
 {
     fn children(&self) -> Vec<Tree> {
@@ -58,10 +60,11 @@ where
         state: &mut Tree,
         event: Event,
         layout: Layout<'_>,
-        cursor_position: Point,
+        cursor_position: iced::mouse::Cursor,
         renderer: &Renderer,
         clipboard: &mut dyn Clipboard,
         shell: &mut Shell<'_, Message>,
+        viewport: &Rectangle,
     ) -> event::Status {
         self.base.as_widget_mut().on_event(
             &mut state.children[0],
@@ -71,6 +74,7 @@ where
             renderer,
             clipboard,
             shell,
+            viewport,
         )
     }
 
@@ -78,10 +82,10 @@ where
         &self,
         state: &Tree,
         renderer: &mut Renderer,
-        theme: &<Renderer as iced_native::Renderer>::Theme,
+        theme: &<Renderer as iced::advanced::Renderer>::Theme,
         style: &renderer::Style,
         layout: Layout<'_>,
-        cursor_position: Point,
+        cursor_position: iced::mouse::Cursor,
         viewport: &Rectangle,
     ) {
         self.base.as_widget().draw(
@@ -115,7 +119,7 @@ where
         &self,
         state: &Tree,
         layout: Layout<'_>,
-        cursor_position: Point,
+        cursor_position: iced::mouse::Cursor,
         viewport: &Rectangle,
         renderer: &Renderer,
     ) -> mouse::Interaction {
@@ -150,7 +154,7 @@ struct OverlayInternal<'a, 'b, Message, Renderer> {
 impl<'a, 'b, Message, Renderer> overlay::Overlay<Message, Renderer>
     for OverlayInternal<'a, 'b, Message, Renderer>
 where
-    Renderer: iced_native::Renderer,
+    Renderer: iced::advanced::Renderer,
     Message: Clone,
 {
     fn layout(&self, renderer: &Renderer, _bounds: Size, position: Point) -> layout::Node {
@@ -171,7 +175,7 @@ where
         &mut self,
         event: Event,
         layout: Layout<'_>,
-        cursor_position: Point,
+        cursor_position: iced::mouse::Cursor,
         renderer: &Renderer,
         clipboard: &mut dyn Clipboard,
         shell: &mut Shell<'_, Message>,
@@ -186,6 +190,7 @@ where
             renderer,
             clipboard,
             shell,
+            &layout.bounds(),
         )
     }
 
@@ -195,12 +200,12 @@ where
         theme: &Renderer::Theme,
         style: &renderer::Style,
         layout: Layout<'_>,
-        cursor_position: Point,
+        cursor_position: iced::mouse::Cursor,
     ) {
         renderer.fill_quad(
             renderer::Quad {
                 bounds: layout.bounds(),
-                border_radius: renderer::BorderRadius::from(0.0),
+                border_radius: BorderRadius::from(0.0),
                 border_width: 0.0,
                 border_color: Color::TRANSPARENT,
             },
@@ -238,7 +243,7 @@ where
     fn mouse_interaction(
         &self,
         layout: Layout<'_>,
-        cursor_position: Point,
+        cursor_position: iced::mouse::Cursor,
         viewport: &Rectangle,
         renderer: &Renderer,
     ) -> mouse::Interaction {
@@ -254,7 +259,7 @@ where
 
 impl<'a, Message, Renderer> From<Overlay<'a, Message, Renderer>> for Element<'a, Message, Renderer>
 where
-    Renderer: 'a + iced_native::Renderer,
+    Renderer: 'a + iced::advanced::Renderer,
     Message: 'a + Clone,
 {
     fn from(modal: Overlay<'a, Message, Renderer>) -> Self {

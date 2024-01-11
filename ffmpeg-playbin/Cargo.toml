@@ -8,7 +8,7 @@ version = "0.1.0"
 byteorder = "1.4.3"
 cpal = "0.15.2"
 crossbeam-queue = "0.3.8"
-ffmpeg = {package = "ffmpeg-next", version = "6.0.0", features = ["format", "codec", "software-resampling", "software-scaling"]}
+ffmpeg = {package = "ffmpeg-next", version = "6.1.1", features = ["format", "codec", "software-resampling", "software-scaling"]}
 iced_native = "0.10.3"
 tokio = {version = "1.27.0", features = ["full"]}
 tracing = "0.1.37"

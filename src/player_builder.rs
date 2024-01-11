@@ -1,6 +1,6 @@
 //! VideoSettings is used to configure the player before it is created
 
-use iced::futures::SinkExt;
+use iced::futures::{SinkExt, self};
 
 use crate::{Player, PlayerMessage};
 
@@ -43,7 +43,7 @@ impl PlayerBuilder {
             iced::subscription::channel(self.id.clone(), 100, move |mut sender| {
                 let settings = self.clone();
                 async move {
-                    let mut res = Player::new(settings);
+                    let mut res: tokio::sync::mpsc::UnboundedReceiver<PlayerMessage> = Player::new(settings);
                     loop {
                         let message = res.recv().await;
                         match message {
@@ -51,7 +51,7 @@ impl PlayerBuilder {
                                 let _ = sender.send(message).await;
                             }
                             None => {
-                                iced_futures::futures::pending!()
+                                futures::pending!()
                             }
                         }
                     }

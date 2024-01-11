@@ -1,12 +1,11 @@
 //! Video viewer
 //! displays the video and the overlay
 use iced::{
-    alignment::{Horizontal, Vertical},
-    widget::{self, container, svg, text},
-    Alignment, Length,
+    advanced::{layout, overlay, renderer, widget::Tree, Clipboard, Layout, Shell, Widget},
+    event, mouse,
+    widget::{self, image, svg, text, container},
+    Alignment, BorderRadius, Color, Element, Event, Length, Point, Rectangle, Size, alignment::{Vertical, Horizontal},
 };
-
-use iced_futures::MaybeSend;
 
 use crate::{
     helpers::{helper_functions::secs_to_hhmmss, svgs},
@@ -29,16 +28,16 @@ pub enum ControlEvent {
 /// a viewer fuction to make an over easyliy
 pub fn video_view<'a, Message, Renderer, F>(
     player: &'a Player,
-    frame: Option<&'a iced_native::image::Handle>,
+    frame: Option<&'a image::Handle>,
     on_event: &'a F,
     seek_amount: &'a Option<u64>,
 ) -> iced::Element<'a, Message, Renderer>
 where
     Player: PlayerBackend,
     Message: std::clone::Clone + 'a,
-    Renderer: iced_native::text::Renderer
-        + iced_native::image::Renderer
-        + iced_native::svg::Renderer
+    Renderer: iced::advanced::text::Renderer
+        + iced::advanced::image::Renderer
+        + iced::advanced::svg::Renderer
         + 'static,
     Renderer::Theme: widget::button::StyleSheet
         + widget::text_input::StyleSheet
@@ -46,8 +45,8 @@ where
         + widget::slider::StyleSheet
         + widget::container::StyleSheet
         + widget::svg::StyleSheet,
-    F: Fn(ControlEvent) -> Message + 'static + MaybeSend + Clone,
-    <Renderer as iced_native::image::Renderer>::Handle: From<iced_native::image::Handle>,
+    F: Fn(ControlEvent) -> Message + 'static + Clone,
+    <Renderer as iced::advanced::image::Renderer>::Handle: From<image::Handle>,
 {
     let i_width = 1280 as u16;
     let i_height = (i_width as f32 * 9.0 / 16.0) as u16;
@@ -60,7 +59,7 @@ where
             .height(i_height)
             .width(i_width)
     } else {
-        iced::widget::image(iced_native::image::Handle::from_pixels(0, 0, vec![]))
+        iced::widget::image(image::Handle::from_pixels(0, 0, vec![]))
     };
     let duration = player.get_duration().as_secs();
     let position = if let Some(seek) = seek_amount {
