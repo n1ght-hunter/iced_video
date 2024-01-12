@@ -1,5 +1,5 @@
-// Copyright © SixtyFPS GmbH <info@slint.dev>
-// SPDX-License-Identifier: MIT
+//! Audio playback thread
+//! decode audio packets and send them to the audio device
 
 use std::pin::Pin;
 
@@ -22,7 +22,7 @@ pub struct AudioPlaybackThread {
 }
 
 impl AudioPlaybackThread {
-    pub fn start(stream: &ffmpeg::format::stream::Stream) -> Result<Self, anyhow::Error> {
+    pub fn start(stream: &ffmpeg::format::stream::Stream<'_>) -> Result<Self, anyhow::Error> {
         let (control_sender, control_receiver) = smol::channel::unbounded();
 
         let (packet_sender, packet_receiver) = smol::channel::bounded(128);
@@ -120,7 +120,7 @@ impl AudioPlaybackThread {
 
 impl Drop for AudioPlaybackThread {
     fn drop(&mut self) {
-        self.control_sender.close();
+        let _ = self.control_sender.close();
         if let Some(receiver_join_handle) = self.receiver_thread.take() {
             receiver_join_handle.join().unwrap();
         }
@@ -151,11 +151,11 @@ where
                 bytemuck::cast_slice(&audio_frame.data(0)[..expected_bytes]);
 
             while self.free_len() < cpal_sample_data.len() {
-                smol::Timer::after(std::time::Duration::from_millis(16)).await;
+                let _ = smol::Timer::after(std::time::Duration::from_millis(16)).await;
             }
 
             // Buffer the samples for playback
-            self.push_slice(cpal_sample_data);
+            let _ = self.push_slice(cpal_sample_data);
         })
     }
 }
@@ -225,7 +225,7 @@ impl FFmpegToCPalForwarder {
 
             while self.packet_decoder.receive_frame(&mut decoded_frame).is_ok() {
                 let mut resampled_frame = ffmpeg::util::frame::Audio::empty();
-                self.resampler.run(&decoded_frame, &mut resampled_frame).unwrap();
+                let _ = self.resampler.run(&decoded_frame, &mut resampled_frame).unwrap();
 
                 self.ffmpeg_to_cpal_pipe.forward(resampled_frame).await;
             }

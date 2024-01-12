@@ -1,4 +1,4 @@
-use std::{time::Duration, sync::Arc};
+use std::{path::PathBuf, sync::{Arc, atomic::AtomicBool}, time::Duration};
 
 pub use crate::error::GstreamerError;
 use crate::{extra_functions::send_seek_event, unsafe_functions::is_initialized};
@@ -8,8 +8,10 @@ use gst::{
     traits::{ElementExt, PadExt},
     BusSyncReply, FlowError, FlowSuccess,
 };
-use playbin_core::{AdvancedPlayer, BasicPlayer, PlayerBuilder, image, PlayerMessage, smol::lock::Mutex};
-use tracing::{debug, info, error};
+use playbin_core::{
+    image, smol::lock::Mutex, AdvancedPlayer, BasicPlayer, PlayerBuilder, PlayerMessage,
+};
+use tracing::{debug, error, info};
 
 /// A gstreamer backend for the player.
 #[derive(Debug, Clone)]
@@ -22,6 +24,7 @@ pub struct Player {
 
     video_details: Option<VideoDetails>,
     playback_rate: Arc<Mutex<f64>>,
+    loop_track: Arc<AtomicBool>,
 }
 
 /// stores some details about the video.
@@ -45,7 +48,12 @@ pub struct VideoDetails {
 
 impl Player {
     /// Creates a gstreamer player.
-    pub fn new(settings: PlayerBuilder) -> (Self, playbin_core::smol::channel::Receiver<playbin_core::PlayerMessage<Self>>) {
+    pub fn new(
+        settings: PlayerBuilder,
+    ) -> (
+        Self,
+        playbin_core::smol::channel::Receiver<playbin_core::PlayerMessage<Self>>,
+    ) {
         let (sender, receiver) = playbin_core::smol::channel::unbounded::<PlayerMessage<Self>>();
         let sender1 = sender.clone();
         let sender2 = sender.clone();
@@ -53,6 +61,9 @@ impl Player {
         let id1 = settings.id.clone();
         let id2 = settings.id.clone();
         let _id3 = settings.id.clone();
+        let loop_track = Arc::new(AtomicBool::new(false));
+        let loop_track_clone = loop_track.clone();
+
         let player = Self::build_player(
             settings,
             move |sink: &gst_app::AppSink| {
@@ -82,7 +93,17 @@ impl Player {
 
                 Ok(FlowSuccess::Ok)
             },
-            move |_, msg| {
+            move |_, msg, playbin| {
+                let mes = msg.view();
+
+                if let gst::MessageView::Eos(_) = mes {
+                    if loop_track.load(std::sync::atomic::Ordering::Relaxed)  {
+                        let pos = Duration::from_secs(0).as_nanos() as u64;
+                        playbin
+                            .seek_simple(gst::SeekFlags::FLUSH, pos * gst::ClockTime::NSECOND)
+                            .unwrap();
+                    }
+                }
                 // let res = sender1.send(GstreamerMessage::Message(id2.clone(), msg.clone()));
 
                 // if res.is_err() {
@@ -90,6 +111,7 @@ impl Player {
                 // }
                 BusSyncReply::Pass
             },
+            loop_track_clone,
         )
         .unwrap();
         (player, receiver)
@@ -100,11 +122,12 @@ impl Player {
         video_settings: PlayerBuilder,
         frame_callback: C,
         message_callback: F,
+        loop_track: Arc<AtomicBool>,
     ) -> Result<Self, GstreamerError>
     where
         Self: Sized,
         C: FnMut(&gst_app::AppSink) -> Result<gst::FlowSuccess, gst::FlowError> + Send + 'static,
-        F: Fn(&gst::Bus, &gst::Message) -> BusSyncReply + Send + Sync + 'static,
+        F: Fn(&gst::Bus, &gst::Message, gst::Element) -> BusSyncReply + Send + Sync + 'static,
     {
         info!("Initializing Player");
 
@@ -156,7 +179,9 @@ impl Player {
 
         let _id = video_settings.id.clone();
 
-        bus.set_sync_handler(message_callback);
+        let playbin_clone = playbin.clone();
+
+        bus.set_sync_handler(move |b, m| message_callback(b, m, playbin_clone.clone()));
 
         debug!("Create ghost pad");
         let pad = video_convert
@@ -173,6 +198,7 @@ impl Player {
             settings: video_settings,
             video_details: None,
             playback_rate: Arc::new(Mutex::new(1.0)),
+            loop_track,
         };
 
         if let Some(url) = backend.settings.uri.clone() {
@@ -188,7 +214,10 @@ impl BasicPlayer for Player {
     type Error = GstreamerError;
     fn create(
         player_builder: PlayerBuilder,
-    ) -> (Self, playbin_core::smol::channel::Receiver<playbin_core::PlayerMessage<Self>>)
+    ) -> (
+        Self,
+        playbin_core::smol::channel::Receiver<playbin_core::PlayerMessage<Self>>,
+    )
     where
         Self: Sized,
     {
@@ -244,7 +273,8 @@ impl BasicPlayer for Player {
         let _ = self
             .playbin
             .set_state(gst::State::Paused)
-            .map_err(|_| GstreamerError::CustomError("Element failed to change its state")).unwrap();
+            .map_err(|_| GstreamerError::CustomError("Element failed to change its state"))
+            .unwrap();
     }
 
     fn play(&self) {
@@ -252,7 +282,8 @@ impl BasicPlayer for Player {
         let _ = self
             .playbin
             .set_state(gst::State::Playing)
-            .map_err(|_| GstreamerError::CustomError("Element failed to change its state")).unwrap();
+            .map_err(|_| GstreamerError::CustomError("Element failed to change its state"))
+            .unwrap();
     }
 
     fn is_playing(&self) -> bool {
@@ -288,11 +319,12 @@ impl AdvancedPlayer for Player {
     }
 
     fn set_looping(&self, looping: bool) {
-        todo!()
+        debug!("looping set to: {}", looping);
+        self.loop_track.store(looping, std::sync::atomic::Ordering::Relaxed);
     }
 
     fn get_looping(&self) -> bool {
-        todo!()
+        self.loop_track.load(std::sync::atomic::Ordering::Relaxed)
     }
 
     fn seek(&self, time: Duration) -> Result<(), Self::Error> {

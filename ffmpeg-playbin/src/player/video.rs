@@ -1,5 +1,5 @@
-// Copyright © SixtyFPS GmbH <info@slint.dev>
-// SPDX-License-Identifier: MIT
+//! Video playback thread
+//! decode video packets and send them to the main thread
 
 use futures::{future::OptionFuture, FutureExt};
 
@@ -13,7 +13,7 @@ pub struct VideoPlaybackThread {
 
 impl VideoPlaybackThread {
     pub fn start(
-        stream: &ffmpeg::format::stream::Stream,
+        stream: &ffmpeg::format::stream::Stream<'_>,
         mut video_frame_callback: Box<dyn FnMut(&ffmpeg::util::frame::Video) + Send>,
     ) -> Result<Self, anyhow::Error> {
         let (control_sender, control_receiver) = smol::channel::unbounded();
@@ -42,7 +42,7 @@ impl VideoPlaybackThread {
                                 if let Some(delay) =
                                     clock.convert_pts_to_instant(decoded_frame.pts())
                                 {
-                                    smol::Timer::after(delay).await;
+                                    let _ = smol::Timer::after(delay).await;
                                 }
 
                                 video_frame_callback(&decoded_frame);
@@ -98,7 +98,7 @@ impl VideoPlaybackThread {
 
 impl Drop for VideoPlaybackThread {
     fn drop(&mut self) {
-        self.control_sender.close();
+        let _ = self.control_sender.close();
         if let Some(receiver_join_handle) = self.receiver_thread.take() {
             receiver_join_handle.join().unwrap();
         }
@@ -111,7 +111,7 @@ struct StreamClock {
 }
 
 impl StreamClock {
-    fn new(stream: &ffmpeg::format::stream::Stream) -> Self {
+    fn new(stream: &ffmpeg::format::stream::Stream<'_>) -> Self {
         let time_base_seconds = stream.time_base();
         let time_base_seconds =
             time_base_seconds.numerator() as f64 / time_base_seconds.denominator() as f64;

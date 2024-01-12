@@ -1,9 +1,16 @@
+
+/// Error type for the gstreamer-playbin crate
 #[derive(Debug)]
 pub enum GstreamerError {
+    /// Glib error
     Glib(gst::glib::Error),
+    /// Element not found
     MissingElement(&'static str),
+    /// unknow error
     GstBoolError(gst::glib::BoolError),
+    /// Type mismatch error
     TypeMismatch(gst::structure::GetError<gst::glib::value::ValueTypeMismatchError>),
+    /// Custom error
     CustomError(&'static str),
 }
 

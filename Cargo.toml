@@ -30,7 +30,7 @@ members = [
 ]
 
 [features]
-default = ["gstreamer"]
+default = []
 gstreamer = ["gstreamer-playbin"]
 ffmpeg = ["ffmpeg-playbin"]
 

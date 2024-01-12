@@ -4,9 +4,8 @@ use iced::{
     Application, Command, Element,
 };
 use iced_video::{
-    player_handler::PlayerHandler,
     viewer::{video_view, ControlEvent},
-    AdvancedPlayer, BasicPlayer, PlayerBuilder, PlayerMessage,
+    AdvancedPlayer, BasicPlayer, PlayerBuilder, PlayerHandler, PlayerMessage,
 };
 
 fn main() {
@@ -17,12 +16,12 @@ fn main() {
 
 #[derive(Clone, Debug)]
 enum Message {
-    Video(PlayerMessage<iced_video::ffmpeg_playbin::player::Player>),
+    Video(PlayerMessage),
     ControlEvent(ControlEvent),
 }
 
 struct App {
-    player_handler: PlayerHandler<iced_video::ffmpeg_playbin::player::Player>,
+    player_handler: PlayerHandler,
     seek: Option<u64>,
     id: String,
 }
@@ -79,7 +78,7 @@ impl Application for App {
                         }
                         ControlEvent::Volume(volume) => {
                             // player.set_volume(volume)
-                        },
+                        }
                         ControlEvent::Seek(p) => {
                             self.seek = Some(p as u64);
                         }

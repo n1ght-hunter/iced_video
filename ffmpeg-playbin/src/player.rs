@@ -1,5 +1,4 @@
-// Copyright © SixtyFPS GmbH <info@slint.dev>
-// SPDX-License-Identifier: MIT
+//! The player implementation.
 
 use std::{path::PathBuf, sync::Arc};
 
@@ -11,12 +10,16 @@ use smol::lock::Mutex;
 mod audio;
 mod video;
 
-#[derive(Clone, Copy)]
+/// Control commands that can be sent to the player.
+#[derive(Clone, Copy, Debug)]
 pub enum ControlCommand {
+    /// Resume playback.
     Play,
+    /// Pause playback.
     Pause,
 }
 
+/// The player implementation.
 #[derive(Clone, Debug)]
 pub struct Player {
     control_sender: Option<smol::channel::Sender<ControlCommand>>,
@@ -28,6 +31,7 @@ pub struct Player {
 }
 
 impl Player {
+    /// Create a new player.
     pub fn start(
         player_builder: PlayerBuilder,
     ) -> (Self, smol::channel::Receiver<PlayerMessage<Self>>) {
@@ -111,9 +115,9 @@ impl Player {
                     let packet_forwarder_impl = async {
                         for (stream, packet) in input_context.packets() {
                             if stream.index() == audio_stream_index {
-                                audio_playback_thread.receive_packet(packet).await;
+                                let _ = audio_playback_thread.receive_packet(packet).await;
                             } else if stream.index() == video_stream_index {
-                                video_playback_thread.receive_packet(packet).await;
+                                let _ = video_playback_thread.receive_packet(packet).await;
                             }
                         }
                     }
@@ -170,6 +174,8 @@ impl Player {
 // Work around https://github.com/zmwangx/rust-ffmpeg/issues/102
 #[derive(derive_more::Deref, derive_more::DerefMut)]
 struct Rescaler(ffmpeg::software::scaling::Context);
+
+#[allow(unsafe_code)]
 unsafe impl std::marker::Send for Rescaler {}
 
 fn rgba_rescaler_for_frame(frame: &ffmpeg::util::frame::Video) -> Rescaler {
@@ -190,7 +196,7 @@ fn rgba_rescaler_for_frame(frame: &ffmpeg::util::frame::Video) -> Rescaler {
 impl Drop for Player {
     fn drop(&mut self) {
         if let Some(control_sender) = self.control_sender.as_ref() {
-            control_sender.close();
+            let _ = control_sender.close();
         }
         if let Some(decoder_thread) = self.demuxer_thread.take() {
             Arc::try_unwrap(decoder_thread).unwrap().join().unwrap();
@@ -205,7 +211,7 @@ impl BasicPlayer for Player {
     where
         Self: Sized,
     {
-        let mut player =Self::start(player_builder.clone());
+        let mut player = Self::start(player_builder.clone());
         if player_builder.auto_start && player_builder.uri.is_some() {
             player.0.set_source(&player_builder.uri.unwrap()).unwrap();
         }

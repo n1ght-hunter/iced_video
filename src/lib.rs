@@ -32,6 +32,12 @@ pub mod viewer;
 
 pub use playbin_core::*;
 
+/// set default player
+pub type PlayerMessage<P = Player> = playbin_core::PlayerMessage<P>;
+
+/// set default player
+pub type PlayerHandler<P = Player> = player_handler::PlayerHandler<P>;
+
 #[cfg(feature = "gstreamer")]
 pub use gstreamer_playbin;
 
@@ -44,4 +50,4 @@ pub type Player = gstreamer_playbin::Player;
 
 /// Default player type
 #[cfg(all(feature = "ffmpeg", not(feature = "gstreamer")))]
-pub type Player = ffmpeg_playbin::Player;
+pub type Player = ffmpeg_playbin::player::Player;
