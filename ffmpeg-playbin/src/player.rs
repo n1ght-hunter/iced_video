@@ -4,11 +4,17 @@ use std::{path::PathBuf, sync::Arc};
 
 use ffmpeg::frame::Video;
 use futures::{future::OptionFuture, FutureExt};
-use playbin_core::{BasicPlayer, PlayerBuilder, PlayerMessage};
+use playbin_core::{BasicPlayer, IcedImage, PlayerBuilder};
 use smol::lock::Mutex;
 
 mod audio;
 mod video;
+
+#[cfg(feature = "iced")]
+type PlayerMessage<P> = playbin_core::PlayerMessage<P>;
+
+#[cfg(not(feature = "iced"))]
+type PlayerMessage<P> = playbin_core::PlayerMessage<P, crate::Frame>;
 
 /// Control commands that can be sent to the player.
 #[derive(Clone, Copy, Debug)]
@@ -91,7 +97,13 @@ impl Player {
                             let mut rgb_frame = ffmpeg::util::frame::Video::empty();
                             rescaler.run(&frame, &mut rgb_frame).unwrap();
 
-                            if let Err(e) = event_sender.try_send(PlayerMessage::Frame(id.clone(),crate::frame_to_image_handle(&rgb_frame))) {
+                            #[cfg(feature = "iced")]
+                            let frame = crate::Frame(rgb_frame).get_image();
+                            
+                            #[cfg(not(feature = "iced"))]
+                            let frame = crate::Frame(rgb_frame);
+
+                            if let Err(e) = event_sender.try_send(PlayerMessage::Frame(id.clone(),frame)) {
                                 println!("Error sending frame: {:?}", e);
                             }
                         }),

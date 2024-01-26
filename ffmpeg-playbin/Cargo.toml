@@ -17,3 +17,8 @@ bytemuck = "1"
 derive_more = "0.99"
 
 playbin-core = { path = "../playbin-core" }
+
+[features]
+default = ["iced"]
+iced = []
+
