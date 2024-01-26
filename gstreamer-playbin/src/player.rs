@@ -1,4 +1,8 @@
-use std::{path::PathBuf, sync::{Arc, atomic::AtomicBool}, time::Duration};
+use std::{
+    path::PathBuf,
+    sync::{atomic::AtomicBool, Arc},
+    time::Duration,
+};
 
 pub use crate::error::GstreamerError;
 use crate::{extra_functions::send_seek_event, unsafe_functions::is_initialized};
@@ -97,10 +101,19 @@ impl Player {
                 let mes = msg.view();
 
                 if let gst::MessageView::Eos(_) = mes {
-                    if loop_track.load(std::sync::atomic::Ordering::Relaxed)  {
-                        let pos = Duration::from_secs(0).as_nanos() as u64;
+                    println!("eos");
+                    if loop_track.load(std::sync::atomic::Ordering::Relaxed) {
+                        println!("looping");
+                        let pos = Duration::from_secs(2).as_nanos() as u64;
                         playbin
-                            .seek_simple(gst::SeekFlags::FLUSH, pos * gst::ClockTime::NSECOND)
+                            .seek(
+                                1.0,
+                                gst::SeekFlags::FLUSH,
+                                gst::SeekType::Set,
+                                pos * gst::ClockTime::NSECOND,
+                                gst::SeekType::None,
+                                gst::ClockTime::NONE,
+                            )
                             .unwrap();
                     }
                 }
@@ -320,7 +333,8 @@ impl AdvancedPlayer for Player {
 
     fn set_looping(&self, looping: bool) {
         debug!("looping set to: {}", looping);
-        self.loop_track.store(looping, std::sync::atomic::Ordering::Relaxed);
+        self.loop_track
+            .store(looping, std::sync::atomic::Ordering::Relaxed);
     }
 
     fn get_looping(&self) -> bool {

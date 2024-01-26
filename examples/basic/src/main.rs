@@ -1,6 +1,6 @@
 use iced::{
     executor,
-    widget::{self, container},
+    widget::{self, container, button, text},
     Application, Command, Element,
 };
 use iced_video::{
@@ -18,6 +18,7 @@ fn main() {
 enum Message {
     Video(PlayerMessage),
     ControlEvent(ControlEvent),
+    ToggleLoop(String),
 }
 
 struct App {
@@ -70,11 +71,11 @@ impl Application for App {
                         ControlEvent::Play => player.play(),
                         ControlEvent::Pause => player.pause(),
                         ControlEvent::ToggleMute => {
-                            // if player.get_muted() {
-                            //     player.set_muted(false)
-                            // } else {
-                            //     player.set_muted(true)
-                            // }
+                            if player.get_muted() {
+                                player.set_muted(false)
+                            } else {
+                                player.set_muted(true)
+                            }
                         }
                         ControlEvent::Volume(volume) => {
                             // player.set_volume(volume)
@@ -83,14 +84,23 @@ impl Application for App {
                             self.seek = Some(p as u64);
                         }
                         ControlEvent::Released => {
-                            // player
-                            //     .seek(std::time::Duration::from_secs(self.seek.unwrap()))
-                            //     .unwrap_or_else(|err| println!("Error seeking: {:?}", err));
+                            player
+                                .seek(std::time::Duration::from_secs(self.seek.unwrap()))
+                                .unwrap_or_else(|err| println!("Error seeking: {:?}", err));
                             self.seek = None;
                         }
                     }
                 }
             }
+            Message::ToggleLoop(id) => {
+                if let Some(player) = self.player_handler.get_player_mut(&id) {
+                    if player.get_looping() {
+                        player.set_looping(false)
+                    } else {
+                        player.set_looping(true)
+                    }
+                }
+            },
         }
         Command::none()
     }
@@ -100,17 +110,18 @@ impl Application for App {
             self.player_handler.get_player(&self.id)
         {
             let frame = self.player_handler.get_frame(&self.id);
-            if let Some(handle) = frame {
-                let i_width = 1280 as u16;
-                let i_height = (i_width as f32 * 9.0 / 16.0) as u16;
-                iced::widget::image(handle.clone())
-                    .height(i_height)
-                    .width(i_width)
-                    .into()
-            } else {
-                iced::widget::image(iced::widget::image::Handle::from_pixels(0, 0, vec![])).into()
-            }
-            // video_view(player, frame, &Message::ControlEvent, &self.seek).into()
+            // if let Some(handle) = frame {
+            //     let i_width = 1280 as u16;
+            //     let i_height = (i_width as f32 * 9.0 / 16.0) as u16;
+            //     iced::widget::image(handle.clone())
+            //         .height(i_height)
+            //         .width(i_width)
+            //         .into()
+            // } else {
+            //     iced::widget::image(iced::widget::image::Handle::from_pixels(0, 0, vec![])).into()
+            // }
+            widget::column![widget::row![text(player.get_looping()) ,button("Loop").on_press(Message::ToggleLoop(self.id.clone()))],
+            video_view(player, frame, &Message::ControlEvent, &self.seek)].into()
         } else {
             widget::Text::new("No player").size(30).into()
         };
