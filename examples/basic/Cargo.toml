@@ -4,8 +4,8 @@ name = "basic_video_player"
 version = "0.1.0"
 
 [dependencies]
-iced_video = {path = "../../", features = ["gstreamer"]}
+iced_video.workspace = true
 
 [dependencies.iced]
 features = ["tokio", "debug", "image", "svg", "canvas"]
-version = "0.10"
+workspace = true

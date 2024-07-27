@@ -5,7 +5,7 @@ use iced::{
     alignment::{Horizontal, Vertical},
     event, mouse,
     widget::{self, container, image, svg, text},
-    Alignment, BorderRadius, Color, Element, Event, Length, Point, Rectangle, Size,
+    Alignment,  Color, Element, Event, Length, Point, Rectangle, Size,
 };
 use playbin_core::AdvancedPlayer;
 
@@ -27,12 +27,12 @@ pub enum ControlEvent {
 }
 
 /// a viewer fuction to make an over easyliy
-pub fn video_view<'a, Message, Renderer, F, P>(
+pub fn video_view<'a, Message,Theme, Renderer, F, P>(
     player: &'a P,
     frame: Option<&'a image::Handle>,
     on_event: &'a F,
     seek_amount: &'a Option<u64>,
-) -> iced::Element<'a, Message, Renderer>
+) -> iced::Element<'a, Message,Theme, Renderer>
 where
     P: AdvancedPlayer,
     Message: std::clone::Clone + 'a,
@@ -40,12 +40,12 @@ where
         + iced::advanced::image::Renderer
         + iced::advanced::svg::Renderer
         + 'static,
-    Renderer::Theme: widget::button::StyleSheet
+    Theme: widget::button::StyleSheet
         + widget::text_input::StyleSheet
         + widget::text::StyleSheet
         + widget::slider::StyleSheet
         + widget::container::StyleSheet
-        + widget::svg::StyleSheet,
+        + widget::svg::StyleSheet + 'a,
     F: Fn(ControlEvent) -> Message + 'static + Clone,
     <Renderer as iced::advanced::image::Renderer>::Handle: From<image::Handle>,
 {

@@ -15,9 +15,7 @@ playbin-core = {path = "./playbin-core"}
 ffmpeg-playbin = {path = "./ffmpeg-playbin", optional = true}
 gstreamer-playbin = {path = "./gstreamer-playbin", optional = true}
 
-[dependencies.iced]
-features = ["tokio", "debug", "image", "svg", "advanced"]
-version = "0.10"
+iced.workspace = true
 
 
 [workspace]
@@ -28,9 +26,14 @@ members = [
   "gstreamer-playbin",
   "playbin-core",
 ]
+resolver = "2"
+
+[workspace.dependencies]
+iced = { version = "0.12.1", features = ["tokio", "debug", "image", "svg", "advanced"] }
+iced_video = {path = "."}
 
 [features]
-default = []
+default = ["gstreamer"]
 gstreamer = ["gstreamer-playbin"]
 ffmpeg = ["ffmpeg-playbin"]
 
