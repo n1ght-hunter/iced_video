@@ -16,7 +16,7 @@ impl button::StyleSheet for Theme {
         let auto_fill = |background: Color, text: Color| button::Appearance {
             background: Some(background.into()),
             text_color: text,
-            border_radius: 2.0.into(),
+            border: iced::Border::with_radius(2.0),
             ..button::Appearance::default()
         };
 

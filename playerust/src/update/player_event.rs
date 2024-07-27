@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use iced::Command;
-use iced_video::{viewer::ControlEvent, PlayerBackend};
+use iced_video::{viewer::ControlEvent, BasicPlayer, AdvancedPlayer};
 
 use crate::state::State;
 
@@ -11,12 +11,10 @@ pub fn control_event(state: &mut State, event: ControlEvent) -> iced::Command<Me
     if let Some(player) = state.player_handler.get_player_mut("main player") {
         match event {
             ControlEvent::Play => player
-                .set_paused(false)
-                .unwrap_or_else(|err| println!("Error seting paused state: {:?}", err)),
+                .play(),
 
             ControlEvent::Pause => player
-                .set_paused(true)
-                .unwrap_or_else(|err| println!("Error seting paused state: {:?}", err)),
+                .pause(),
             ControlEvent::ToggleMute => {
                 if player.get_muted() {
                     player.set_muted(false)

@@ -9,7 +9,7 @@ impl Subscription for KeyPressHandler {
         _state: &crate::state::State,
         _params: Self::Params,
     ) -> iced::Subscription<crate::update::Message> {
-        iced::subscription::events_with(|event, _| {
+        iced::event::listen_with(|event, _| {
             if let iced::Event::Keyboard(key_event) = event {
                 Some(crate::update::Message::KeyBoardEvent(key_event))
             } else {
