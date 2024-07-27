@@ -2,7 +2,8 @@ use iced::{color, widget, Alignment, Background, Color, Length, Padding};
 use iced_video::{
     helpers::{helper_functions::secs_to_hhmmss, svgs},
     viewer::ControlEvent,
-    PlayerBackend,
+    BasicPlayer,
+    AdvancedPlayer,
 };
 
 use crate::{state::State, theme, update::Message, Element};
@@ -22,13 +23,14 @@ pub fn controls(state: &State) -> Element {
         0
     };
     let play_pause = if let Some(player) = player {
-        if player.get_paused() {
-            widget::Button::new(widget::svg(svgs::play_svg()).height(28).width(28))
-                .on_press(Message::ControlEvent(ControlEvent::Play))
-        } else {
+        if player.is_playing() {
             widget::Button::new(widget::svg(svgs::pause_svg()).height(28).width(28))
-                // .style(theme::Button::Transparent)
-                .on_press(Message::ControlEvent(ControlEvent::Pause))
+            // .style(theme::Button::Transparent)
+            .on_press(Message::ControlEvent(ControlEvent::Pause))
+        } else {
+            
+                widget::Button::new(widget::svg(svgs::play_svg()).height(28).width(28))
+                .on_press(Message::ControlEvent(ControlEvent::Play))
         }
     } else {
         widget::Button::new(widget::svg(svgs::play_svg()).height(28).width(28))
@@ -104,9 +106,8 @@ pub fn controls(state: &State) -> Element {
         widget::container::Appearance {
             text_color: None,
             background: Some(Background::Color(color!(242, 241, 236))),
-            border_radius: 0.0.into(),
-            border_width: 0.0,
-            border_color: Color::WHITE,
+            border: iced::Border::default(),
+            shadow: iced::Shadow::default(),
         }
     }))
     .padding(Padding {

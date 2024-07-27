@@ -4,8 +4,8 @@ use iced::{
     Application, Command,
 };
 use iced_video::{
-    player_handler::PlayerHandler, viewer::ControlEvent, PlayerBackend, PlayerBuilder,
-    PlayerMessage,
+     viewer::ControlEvent, PlayerBuilder, PlayerHandler, PlayerMessage,
+     AdvancedPlayer, BasicPlayer
 };
 
 fn main() {
@@ -66,20 +66,14 @@ impl Application for App {
     fn update(&mut self, message: Self::Message) -> iced::Command<Self::Message> {
         match message {
             Message::Video(event) => {
-                if let Some((_player_id, message)) = self.player_handler.handle_event(event) {
-                    println!("message: {:?}", message);
-                }
+                self.player_handler.handle_event(event);
             }
 
             Message::ControlEvent(uri, event) => {
                 if let Some(player) = self.player_handler.get_player_mut(&uri) {
                     match event {
-                        ControlEvent::Play => player
-                            .set_paused(false)
-                            .unwrap_or_else(|err| println!("Error seting paused state: {:?}", err)),
-                        ControlEvent::Pause => player
-                            .set_paused(true)
-                            .unwrap_or_else(|err| println!("Error seting paused state: {:?}", err)),
+                        ControlEvent::Play => player.play(),
+                        ControlEvent::Pause => player.pause(),
                         ControlEvent::ToggleMute => {
                             if player.get_muted() {
                                 player.set_muted(false)
@@ -87,7 +81,9 @@ impl Application for App {
                                 player.set_muted(true)
                             }
                         }
-                        ControlEvent::Volume(volume) => player.set_volume(volume),
+                        ControlEvent::Volume(volume) => {
+                            // player.set_volume(volume)
+                        }
                         ControlEvent::Seek(p) => {
                             self.seek = Some(p as u64);
                         }
@@ -117,10 +113,10 @@ impl Application for App {
                 )
                 .on_press(Message::ControlEvent(
                     (*id).clone(),
-                    if player.get_paused() {
-                        ControlEvent::Play
-                    } else {
+                    if player.is_playing() {
                         ControlEvent::Pause
+                    } else {
+                        ControlEvent::Play
                     },
                 ));
 

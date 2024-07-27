@@ -1,5 +1,10 @@
-use gst::{Element, SeekFlags, event::Seek, prelude::{ObjectExt, ElementExtManual}, SeekType};
+use gst::{
+    event::Seek,
+    prelude::{ElementExtManual, ObjectExt},
+    Element, SeekFlags, SeekType,
+};
 
+/// Send a seek event to the pipeline
 pub fn send_seek_event(pipeline: &Element, rate: f64) -> Result<(), &'static str> {
     // Obtain the current position, needed for the seek event
     let position = match pipeline.query_position::<gst::ClockTime>() {
@@ -41,3 +46,4 @@ pub fn send_seek_event(pipeline: &Element, rate: f64) -> Result<(), &'static str
         Err("Failed to update rate")
     }
 }
+

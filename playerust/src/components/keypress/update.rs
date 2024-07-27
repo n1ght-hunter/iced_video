@@ -1,8 +1,8 @@
 use log::debug;
 use std::time::Duration;
 
-use iced::{keyboard::KeyCode, Command};
-use iced_video::PlayerBackend;
+use iced::{keyboard::{key::Named, Key}, Command};
+use iced_video::{BasicPlayer, AdvancedPlayer};
 
 use crate::{helpers::{component_trait::Update, open_file::open_file}, update::{Message, menu_event::MenuEvent}};
 
@@ -16,55 +16,53 @@ impl Update for KeyPressHandler {
         params: Self::Message,
     ) -> iced::Command<crate::Message> {
         if let iced::keyboard::Event::KeyPressed {
-            key_code,
+            key,
             modifiers,
+            ..
         } = params
         {
             if let Some(player) = state.player_handler.get_player_mut("main player") {
-                match key_code {
+                match key.as_ref() {
                     // File Operations
-                    KeyCode::O if modifiers.is_empty() => {
+                    Key::Character("O") if modifiers.is_empty() => {
                         debug!("Open a single file");
                         return Command::perform(async { open_file().await }, |f| {
                             Message::MenuEvent(MenuEvent::OpenFile(f))
                         });
                     }
                     // Playing Operations
-                    KeyCode::Space if modifiers.is_empty() => {
-                        if let Err(err) = player.set_paused(!player.get_paused()) {
-                            eprintln!("Error: {:?}", err);
-                        }
-                    }
-                    KeyCode::E if modifiers.is_empty() => {
-                        if let Err(err) = player.next_frame() {
-                            eprintln!("Error: {:?}", err);
+                    Key::Named(Named::Space) if modifiers.is_empty() => {
+                        if player.is_playing() {
+                            player.pause();
+                        } else {
+                            player.play();
                         }
                     }
 
-                    KeyCode::L if modifiers.is_empty() => {
+                    Key::Character("L") if modifiers.is_empty() => {
                         debug!("Loop the current media");
                         player.set_looping(!player.get_looping());
                     }
 
                     // Playing Speed
-                    KeyCode::LBracket if modifiers.is_empty() => {
-                        if let Err(err) = player.set_rate((player.get_rate() - 0.25).max(0.25)) {
+                    Key::Character("[") if modifiers.is_empty() => {
+                        if let Err(err) = player.set_playback_rate((player.get_playback_rate() - 0.25).max(0.25)) {
                             eprintln!("Error: {:?}", err);
                         }
                     }
-                    KeyCode::RBracket if modifiers.is_empty() => {
-                        if let Err(err) = player.set_rate((player.get_rate() + 0.25).min(2.0)) {
+                    Key::Character("]") if modifiers.is_empty() => {
+                        if let Err(err) = player.set_playback_rate((player.get_playback_rate() + 0.25).min(2.0)) {
                             eprintln!("Error: {:?}", err);
                         }
                     }
-                    KeyCode::Equals if modifiers.is_empty() => {
-                        if let Err(err) = player.set_rate(1.0) {
+                    Key::Character("=") if modifiers.is_empty() => {
+                        if let Err(err) = player.set_playback_rate(1.0) {
                             eprintln!("Error: {:?}", err);
                         }
                     }
 
                     // Quick Forward and Backward
-                    KeyCode::Right if modifiers.shift() => {
+                    Key::Named(Named::ArrowRight) if modifiers.shift() => {
                         debug!("Seek forward 3 seconds");
                         if let Err(err) =
                             player.seek(player.get_position() + Duration::from_secs(3))
@@ -72,7 +70,7 @@ impl Update for KeyPressHandler {
                             eprintln!("Error: {:?}", err);
                         }
                     }
-                    KeyCode::Right if modifiers.alt() => {
+                    Key::Named(Named::ArrowRight) if modifiers.alt() => {
                         debug!("Seek forward 10 seconds");
                         if let Err(err) =
                             player.seek(player.get_position() + Duration::from_secs(10))
@@ -80,7 +78,7 @@ impl Update for KeyPressHandler {
                             eprintln!("Error: {:?}", err);
                         }
                     }
-                    KeyCode::Right if modifiers.control() => {
+                    Key::Named(Named::ArrowRight) if modifiers.control() => {
                         debug!("Seek forward 60 seconds");
                         if let Err(err) =
                             player.seek(player.get_position() + Duration::from_secs(60))
@@ -88,7 +86,7 @@ impl Update for KeyPressHandler {
                             eprintln!("Error: {:?}", err);
                         }
                     }
-                    KeyCode::Right if modifiers.is_empty() => {
+                    Key::Named(Named::ArrowRight) if modifiers.is_empty() => {
                         debug!("Seek forward 1 second");
                         if let Err(err) =
                             player.seek(player.get_position() + Duration::from_secs(1))
@@ -96,7 +94,7 @@ impl Update for KeyPressHandler {
                             eprintln!("Error: {:?}", err);
                         }
                     }
-                    KeyCode::Left if modifiers.shift() => {
+                    Key::Named(Named::ArrowLeft) if modifiers.shift() => {
                         debug!("Seek backward 3 seconds");
                         if let Err(err) =
                             player.seek(player.get_position() - Duration::from_secs(3))
@@ -104,7 +102,7 @@ impl Update for KeyPressHandler {
                             eprintln!("Error: {:?}", err);
                         }
                     }
-                    KeyCode::Left if modifiers.alt() => {
+                    Key::Named(Named::ArrowLeft) if modifiers.alt() => {
                         debug!("Seek backward 10 seconds");
                         if let Err(err) =
                             player.seek(player.get_position() - Duration::from_secs(10))
@@ -112,7 +110,7 @@ impl Update for KeyPressHandler {
                             eprintln!("Error: {:?}", err);
                         }
                     }
-                    KeyCode::Left if modifiers.control() => {
+                    Key::Named(Named::ArrowLeft) if modifiers.control() => {
                         debug!("Seek backward 60 seconds");
                         if let Err(err) =
                             player.seek(player.get_position() - Duration::from_secs(60))
@@ -120,7 +118,7 @@ impl Update for KeyPressHandler {
                             eprintln!("Error: {:?}", err);
                         }
                     }
-                    KeyCode::Left if modifiers.is_empty() => {
+                    Key::Named(Named::ArrowLeft) if modifiers.is_empty() => {
                         debug!("Seek backward 1 second");
                         if let Err(err) =
                             player.seek(player.get_position() - Duration::from_secs(1))
@@ -130,14 +128,14 @@ impl Update for KeyPressHandler {
                     }
 
                     // Sound and Audio Operations
-                    KeyCode::Up if modifiers.is_empty() => {
+                    Key::Named(Named::ArrowUp) if modifiers.is_empty() => {
                         player.set_volume((player.get_volume() + 0.1).min(1.0));
                     }
-                    KeyCode::Down if modifiers.is_empty() => {
+                    Key::Named(Named::ArrowDown) if modifiers.is_empty() => {
                         player.set_volume((player.get_volume() - 0.1).max(0.0));
                     }
 
-                    KeyCode::M if modifiers.is_empty() => {
+                    Key::Character("M") if modifiers.is_empty() => {
                         debug!("Mute sound on and off");
                         player.set_muted(!player.get_muted());
                     }

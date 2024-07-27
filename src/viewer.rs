@@ -1,16 +1,17 @@
 //! Video viewer
 //! displays the video and the overlay
 use iced::{
+    advanced::{layout, overlay, renderer, widget::Tree, Clipboard, Layout, Shell, Widget},
     alignment::{Horizontal, Vertical},
-    widget::{self, container, svg, text},
-    Alignment, Length,
+    event, mouse,
+    widget::{self, container, image, svg, text},
+    Alignment,  Color, Element, Event, Length, Point, Rectangle, Size,
 };
-
+use playbin_core::AdvancedPlayer;
 
 use crate::{
     helpers::{helper_functions::secs_to_hhmmss, svgs},
     overlay::Overlay,
-    Player, PlayerBackend,
 };
 
 /// viewer event enum
@@ -26,27 +27,27 @@ pub enum ControlEvent {
 }
 
 /// a viewer fuction to make an over easyliy
-pub fn video_view<'a, Message, Renderer, F>(
-    player: &'a Player,
-    frame: Option<&'a widget::image::Handle>,
+pub fn video_view<'a, Message,Theme, Renderer, F, P>(
+    player: &'a P,
+    frame: Option<&'a image::Handle>,
     on_event: &'a F,
     seek_amount: &'a Option<u64>,
-) -> iced::Element<'a, Message, Renderer>
+) -> iced::Element<'a, Message,Theme, Renderer>
 where
-    Player: PlayerBackend,
+    P: AdvancedPlayer,
     Message: std::clone::Clone + 'a,
     Renderer: iced::advanced::text::Renderer
         + iced::advanced::image::Renderer
         + iced::advanced::svg::Renderer
         + 'static,
-    Renderer::Theme: widget::button::StyleSheet
+    Theme: widget::button::StyleSheet
         + widget::text_input::StyleSheet
         + widget::text::StyleSheet
         + widget::slider::StyleSheet
         + widget::container::StyleSheet
-        + widget::svg::StyleSheet,
+        + widget::svg::StyleSheet + 'a,
     F: Fn(ControlEvent) -> Message + 'static + Clone,
-    <Renderer as iced::advanced::image::Renderer>::Handle: From<iced::advanced::image::Handle>,
+    <Renderer as iced::advanced::image::Renderer>::Handle: From<image::Handle>,
 {
     let i_width = 1280 as u16;
     let i_height = (i_width as f32 * 9.0 / 16.0) as u16;
@@ -59,7 +60,7 @@ where
             .height(i_height)
             .width(i_width)
     } else {
-        iced::widget::image(widget::image::Handle::from_pixels(0, 0, vec![]))
+        iced::widget::image(image::Handle::from_pixels(0, 0, vec![]))
     };
     let duration = player.get_duration().as_secs();
     let position = if let Some(seek) = seek_amount {
@@ -68,13 +69,13 @@ where
         player.get_position().as_secs()
     };
 
-    let play_pause = if player.get_paused() {
-        widget::Button::new(svg(svgs::play_svg()).height(28).width(28))
-            .on_press(on_event(ControlEvent::Play).clone())
-    } else {
+    let play_pause = if player.is_playing() {
         widget::Button::new(svg(svgs::pause_svg()).height(28).width(28))
             // .style(theme::Button::Transparent)
             .on_press(on_event(ControlEvent::Pause).clone())
+    } else {
+        widget::Button::new(svg(svgs::play_svg()).height(28).width(28))
+            .on_press(on_event(ControlEvent::Play).clone())
     };
 
     let duration_text = text(format!(
@@ -116,7 +117,7 @@ where
     .on_release(on_event(ControlEvent::Released).clone())
     .step(1.0);
 
-    let orverlay = container(widget::column![
+    let overlay = container(widget::column![
         seek_slider,
         widget::row![play_pause, duration_text, volume_button, volume_slider]
             .width(Length::Fill)
@@ -128,6 +129,6 @@ where
     .width(*width)
     .height(*height);
 
-    let content = Overlay::new(container(image).width(*width).height(*height), orverlay);
+    let content = Overlay::new(container(image).width(*width).height(*height), overlay);
     container(content).into()
 }

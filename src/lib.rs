@@ -24,28 +24,30 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
 mod backends;
-mod player_builder;
 
 pub mod helpers;
 pub mod overlay;
 pub mod player_handler;
 pub mod viewer;
 
-pub use helpers::player_backend::PlayerBackend;
-pub use player_builder::PlayerBuilder;
+pub use playbin_core::*;
 
-#[cfg(all(feature = "gstreamer", not(target_arch = "wasm32")))]
-pub use backends::gstreamer::tag_convert;
+/// set default player
+pub type PlayerMessage<P = Player> = playbin_core::PlayerMessage<P>;
 
-/// gstreamer modules that are only available when the gstreamer feature is enabled
-#[cfg(all(feature = "gstreamer", not(target_arch = "wasm32")))]
-pub mod gstreamer {
+/// set default player
+pub type PlayerHandler<P = Player> = player_handler::PlayerHandler<P>;
 
-    pub use gst::{MessageView, DateTime};
-}
+#[cfg(feature = "gstreamer")]
+pub use gstreamer_playbin;
 
-#[cfg(all(feature = "gstreamer", not(target_arch = "wasm32")))]
-pub use backends::gstreamer::GstreamerBackend as Player;
+#[cfg(feature = "ffmpeg")]
+pub use ffmpeg_playbin;
 
-#[cfg(all(feature = "gstreamer", not(target_arch = "wasm32")))]
-pub use backends::gstreamer::GstreamerMessage as PlayerMessage;
+/// Default player type
+#[cfg(feature = "gstreamer")]
+pub type Player = gstreamer_playbin::Player;
+
+/// Default player type
+#[cfg(all(feature = "ffmpeg", not(feature = "gstreamer")))]
+pub type Player = ffmpeg_playbin::player::Player;

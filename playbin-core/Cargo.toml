@@ -1,12 +1,14 @@
 [package]
-edition = "2021"
-name = "multiple_videos"
+name = "playbin-core"
 version = "0.1.0"
+edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-iced_video.workspace = true
+smol = { version = "2" }
+tracing = "0.1"
+
 [dependencies.iced]
-features = ["tokio", "debug", "image"]
+features = ["image"]
 workspace = true

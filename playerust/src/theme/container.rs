@@ -28,9 +28,8 @@ impl container::StyleSheet for Theme {
             Container::Box => container::Appearance {
                 text_color: None,
                 background: Some(self.background.into()),
-                border_radius: 2.0.into(),
-                border_width: 0.0,
-                border_color: Color::BLACK,
+                border: iced::Border { color: Color::BLACK,  radius: 2.0.into(), ..Default::default() },
+                shadow: iced::Shadow::default(),
             },
             Container::Custom(f) => f(self),
         }

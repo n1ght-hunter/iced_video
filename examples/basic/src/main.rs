@@ -1,12 +1,11 @@
 use iced::{
     executor,
-    widget::{self, container},
+    widget::{self, container, button, text},
     Application, Command, Element,
 };
 use iced_video::{
-    player_handler::PlayerHandler,
     viewer::{video_view, ControlEvent},
-    PlayerBackend, PlayerBuilder, PlayerMessage,
+    AdvancedPlayer, BasicPlayer, PlayerBuilder, PlayerHandler, PlayerMessage,
 };
 
 fn main() {
@@ -19,6 +18,7 @@ fn main() {
 enum Message {
     Video(PlayerMessage),
     ControlEvent(ControlEvent),
+    ToggleLoop(String),
 }
 
 struct App {
@@ -63,19 +63,13 @@ impl Application for App {
     fn update(&mut self, message: Self::Message) -> iced::Command<Self::Message> {
         match message {
             Message::Video(event) => {
-                if let Some((_player_id, message)) = self.player_handler.handle_event(event) {
-                    println!("message: {:?}", message);
-                }
+                self.player_handler.handle_event(event);
             }
             Message::ControlEvent(event) => {
                 if let Some(player) = self.player_handler.get_player_mut(&self.id) {
                     match event {
-                        ControlEvent::Play => player
-                            .set_paused(false)
-                            .unwrap_or_else(|err| println!("Error seting paused state: {:?}", err)),
-                        ControlEvent::Pause => player
-                            .set_paused(true)
-                            .unwrap_or_else(|err| println!("Error seting paused state: {:?}", err)),
+                        ControlEvent::Play => player.play(),
+                        ControlEvent::Pause => player.pause(),
                         ControlEvent::ToggleMute => {
                             if player.get_muted() {
                                 player.set_muted(false)
@@ -83,7 +77,9 @@ impl Application for App {
                                 player.set_muted(true)
                             }
                         }
-                        ControlEvent::Volume(volume) => player.set_volume(volume),
+                        ControlEvent::Volume(volume) => {
+                            // player.set_volume(volume)
+                        }
                         ControlEvent::Seek(p) => {
                             self.seek = Some(p as u64);
                         }
@@ -96,18 +92,39 @@ impl Application for App {
                     }
                 }
             }
+            Message::ToggleLoop(id) => {
+                if let Some(player) = self.player_handler.get_player_mut(&id) {
+                    if player.get_looping() {
+                        player.set_looping(false)
+                    } else {
+                        player.set_looping(true)
+                    }
+                }
+            },
         }
         Command::none()
     }
 
     fn view(&self) -> iced::Element<Message> {
-        let player: Element<Message> =
-            if let Some(player) = self.player_handler.get_player(&self.id) {
-                let frame = self.player_handler.get_frame(&self.id);
-                video_view(player, frame, &Message::ControlEvent, &self.seek).into()
-            } else {
-                widget::Text::new("No player").size(30).into()
-            };
+        let player: Element<Message> = if let Some(player) =
+            self.player_handler.get_player(&self.id)
+        {
+            let frame = self.player_handler.get_frame(&self.id);
+            // if let Some(handle) = frame {
+            //     let i_width = 1280 as u16;
+            //     let i_height = (i_width as f32 * 9.0 / 16.0) as u16;
+            //     iced::widget::image(handle.clone())
+            //         .height(i_height)
+            //         .width(i_width)
+            //         .into()
+            // } else {
+            //     iced::widget::image(iced::widget::image::Handle::from_pixels(0, 0, vec![])).into()
+            // }
+            widget::column![widget::row![text(player.get_looping()) ,button("Loop").on_press(Message::ToggleLoop(self.id.clone()))],
+            video_view(player, frame, &Message::ControlEvent, &self.seek)].into()
+        } else {
+            widget::Text::new("No player").size(30).into()
+        };
 
         container(player).center_x().center_y().into()
     }

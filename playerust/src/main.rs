@@ -7,7 +7,7 @@ pub mod helpers;
 pub mod components;
 
 use iced::{executor, Application};
-use iced_video::PlayerBackend;
+use iced_video::BasicPlayer;
 use state::State;
 use subscriptions::subscriptions;
 use update::{update, Message};
@@ -18,7 +18,7 @@ fn main() {
     State::run(Default::default()).unwrap();
 }
 
-pub type Element<'a> = iced::Element<'a, Message, iced::Renderer<theme::Theme>>;
+pub type Element<'a> = iced::Element<'a, Message,theme::Theme, iced::Renderer>;
 
 impl Application for State {
     type Executor = executor::Default;
@@ -38,9 +38,7 @@ impl Application for State {
     }
 
     fn title(&self) -> String {
-        if let Some(iced_video::tag_convert::Tag::Title(title)) = self.tags.get("title") {
-            format!("{} - {}", title, self.title)
-        } else if let Some(player) = self.player_handler.get_player("main player") {
+        if let Some(player) = self.player_handler.get_player("main player") {
             let uri = player.get_source();
             if let Some(uri) = uri {
                 let uri = uri.split("\\").last().unwrap_or(&uri);
