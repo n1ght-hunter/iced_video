@@ -1,4 +1,4 @@
-use iced::Command;
+use iced::Task;
 
 use crate::{Element, Message, State};
 
@@ -15,5 +15,5 @@ pub trait View {
 pub trait Update {
     type Message: std::fmt::Debug + Send;
 
-    fn update(state: &mut State, params: Self::Message) -> Command<Message>;
+    fn update(state: &mut State, params: Self::Message) -> Task<Message>;
 }

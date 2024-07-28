@@ -9,7 +9,7 @@ pub fn image(state: &State) -> Element {
             .height(Length::Fill)
             .width(Length::Fill)
     } else {
-        iced::widget::image(widget::image::Handle::from_pixels(0, 0, vec![]))
+        iced::widget::image(widget::image::Handle::from_rgba(0, 0, vec![]))
             .height(Length::Fill)
             .width(Length::Fill)
     };
@@ -27,17 +27,8 @@ pub fn image(state: &State) -> Element {
                     Message::None(())
                 },
             )
-            .style(theme::Button::Transparent),
     )
     .height(Length::Fill)
     .width(Length::Fill)
-    .style(theme::Container::Custom(|_theme| {
-        widget::container::Appearance {
-            text_color: None,
-            background: Some(Background::Color(Color::BLACK)),
-            border: iced::Border::default(),
-            shadow: iced::Shadow::default(),
-        }
-    }))
     .into()
 }

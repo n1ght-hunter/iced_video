@@ -84,7 +84,7 @@ impl Player {
 
                 let res = sender.try_send(PlayerMessage::Frame(
                     id1.clone(),
-                    image::Handle::from_pixels(
+                    image::Handle::from_rgba(
                         width as u32,
                         height as u32,
                         map.as_slice().to_owned(),

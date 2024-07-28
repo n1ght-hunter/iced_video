@@ -1,7 +1,7 @@
 use log::debug;
 use std::time::Duration;
 
-use iced::{keyboard::{key::Named, Key}, Command};
+use iced::{keyboard::{key::Named, Key}, Task};
 use iced_video::{BasicPlayer, AdvancedPlayer};
 
 use crate::{helpers::{component_trait::Update, open_file::open_file}, update::{Message, menu_event::MenuEvent}};
@@ -14,7 +14,7 @@ impl Update for KeyPressHandler {
     fn update(
         state: &mut crate::state::State,
         params: Self::Message,
-    ) -> iced::Command<crate::Message> {
+    ) -> iced::Task<crate::Message> {
         if let iced::keyboard::Event::KeyPressed {
             key,
             modifiers,
@@ -26,7 +26,7 @@ impl Update for KeyPressHandler {
                     // File Operations
                     Key::Character("O") if modifiers.is_empty() => {
                         debug!("Open a single file");
-                        return Command::perform(async { open_file().await }, |f| {
+                        return Task::perform(async { open_file().await }, |f| {
                             Message::MenuEvent(MenuEvent::OpenFile(f))
                         });
                     }
@@ -146,7 +146,7 @@ impl Update for KeyPressHandler {
             }
         }
 
-        iced::Command::none()
+        iced::Task::none()
     }
 }
 

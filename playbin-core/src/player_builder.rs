@@ -43,7 +43,7 @@ impl PlayerBuilder {
     pub fn build<P: BasicPlayer + std::marker::Send + 'static>(
         self,
     ) -> iced::Subscription<PlayerMessage<P>> {
-        iced::subscription::channel(self.id.clone(), 100, move |mut sender| {
+        iced::Subscription::run_with_id(self.id.clone(), iced::stream::channel( 100,  |mut sender| {
             let settings = self.clone();
             async move {
                 println!("creating player");
@@ -63,6 +63,6 @@ impl PlayerBuilder {
                     }
                 }
             }
-        })
+        }))
     }
 }

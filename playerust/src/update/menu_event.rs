@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use iced::Command;
+use iced::Task;
 use iced_video::BasicPlayer;
 use rfd::AsyncFileDialog;
 
@@ -14,10 +14,10 @@ pub enum MenuEvent {
     OpenFile(Option<String>),
 }
 
-pub fn menu_event(state: &mut State, event: MenuEvent) -> iced::Command<Message> {
+pub fn menu_event(state: &mut State, event: MenuEvent) -> iced::Task<Message> {
     match event {
         MenuEvent::OpenFileDialog => {
-            return Command::perform(async { open_file().await }, |f| {
+            return Task::perform(async { open_file().await }, |f| {
                 Message::MenuEvent(MenuEvent::OpenFile(f))
             })
         }
@@ -29,5 +29,5 @@ pub fn menu_event(state: &mut State, event: MenuEvent) -> iced::Command<Message>
             }
         }
     }
-    Command::none()
+    Task::none()
 }

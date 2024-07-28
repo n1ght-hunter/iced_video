@@ -1,18 +1,21 @@
 use iced::{
     executor,
     widget::{self, button, container, scrollable},
-    Application, Command,
+    Application, Task,
 };
 use iced_video::{
      viewer::ControlEvent, PlayerBuilder, PlayerHandler, PlayerMessage,
      AdvancedPlayer, BasicPlayer
 };
 
-fn main() {
-    // uncomment to see debug messages from gstreamer
-    // std::env::set_var("GST_DEBUG", "3");
-    App::run(Default::default()).unwrap();
+fn main() -> iced::Result {
+    iced::application(
+        App::title,
+        App::update,
+        App::view,
+    ).run_with(App::new)
 }
+
 
 #[derive(Clone, Debug)]
 enum Message {
@@ -25,16 +28,9 @@ struct App {
     seek: Option<u64>,
 }
 
-impl Application for App {
-    type Executor = executor::Default;
+impl App {
 
-    type Message = Message;
-
-    type Theme = iced::Theme;
-
-    type Flags = ();
-
-    fn new(_flags: Self::Flags) -> (Self, iced::Command<Self::Message>) {
+    fn new() -> (Self, iced::Task<Message>) {
         let mut player_handler = PlayerHandler::default();
         let urls = [
             "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
@@ -51,11 +47,11 @@ impl Application for App {
                 player_handler,
                 seek: None,
             },
-            Command::none(),
+            Task::none(),
         )
     }
 
-    fn subscription(&self) -> iced::Subscription<Self::Message> {
+    fn subscription(&self) -> iced::Subscription<Message> {
         self.player_handler.subscriptions().map(Message::Video)
     }
 
@@ -63,7 +59,7 @@ impl Application for App {
         String::from("Video Player")
     }
 
-    fn update(&mut self, message: Self::Message) -> iced::Command<Self::Message> {
+    fn update(&mut self, message: Message) -> iced::Task<Message> {
         match message {
             Message::Video(event) => {
                 self.player_handler.handle_event(event);
@@ -97,7 +93,7 @@ impl Application for App {
                 }
             }
         }
-        Command::none()
+        Task::none()
     }
 
     fn view(&self) -> iced::Element<Message> {
@@ -124,8 +120,7 @@ impl Application for App {
             })
             .collect::<Vec<iced::Element<Message>>>();
         container(scrollable(widget::Column::with_children(players)))
-            .center_x()
-            .center_y()
+            .center(iced::Length::Fill)
             .into()
     }
 }

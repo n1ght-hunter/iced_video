@@ -2,7 +2,7 @@ pub mod menu_event;
 pub mod player_event;
 use std::path::PathBuf;
 
-use iced::Command;
+use iced::Task;
 use iced_video::{
     viewer::ControlEvent,
      PlayerMessage,
@@ -26,7 +26,7 @@ pub enum Message {
     None(()),
 }
 
-pub fn update(state: &mut State, message: Message) -> iced::Command<Message> {
+pub fn update(state: &mut State, message: Message) -> iced::Task<Message> {
     match message {
         Message::Video(event) => {
             state.player_handler.handle_event(event);
@@ -43,5 +43,5 @@ pub fn update(state: &mut State, message: Message) -> iced::Command<Message> {
             return crate::components::keypress::KeyPressHandler::update(state, event)
         }
     }
-    Command::none()
+    Task::none()
 }

@@ -1,5 +1,5 @@
 
-use iced::Command;
+use iced::Task;
 use iced_video::{  PlayerBuilder, PlayerHandler};
 
 use crate::update::Message;
@@ -11,7 +11,7 @@ pub struct State {
 }
 
 impl State {
-    pub fn new() -> (State, Command<Message>) {
+    pub fn new() -> (State, Task<Message>) {
         let mut player_handler = PlayerHandler::default();
 
         player_handler.start_player(PlayerBuilder::new("main player").set_auto_start(true));
@@ -21,7 +21,7 @@ impl State {
                 seek: None,
                 title: String::from("Video Player"),
             },
-            Command::none(),
+            Task::none(),
         )
     }
 }
