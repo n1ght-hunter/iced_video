@@ -1,13 +1,13 @@
 use std::time::Duration;
 
-use iced::Command;
+use iced::Task;
 use iced_video::{viewer::ControlEvent, BasicPlayer, AdvancedPlayer};
 
 use crate::state::State;
 
 use super::Message;
 
-pub fn control_event(state: &mut State, event: ControlEvent) -> iced::Command<Message> {
+pub fn control_event(state: &mut State, event: ControlEvent) -> iced::Task<Message> {
     if let Some(player) = state.player_handler.get_player_mut("main player") {
         match event {
             ControlEvent::Play => player
@@ -34,5 +34,5 @@ pub fn control_event(state: &mut State, event: ControlEvent) -> iced::Command<Me
             }
         };
     }
-    Command::none()
+    Task::none()
 }

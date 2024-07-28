@@ -135,7 +135,7 @@ where
         state: &mut Tree,
         layout: Layout<'_>,
         renderer: &Renderer,
-        operation: &mut dyn widget::Operation<Message>,
+        operation: &mut dyn widget::Operation<()>,
     ) {
         self.base
             .as_widget()
@@ -233,7 +233,7 @@ where
         &mut self,
         layout: Layout<'_>,
         renderer: &Renderer,
-        operation: &mut dyn widget::Operation<Message>,
+        operation: &mut dyn widget::Operation<()>,
     ) {
         self.content.as_widget().operate(
             self.tree,

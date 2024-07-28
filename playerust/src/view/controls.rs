@@ -76,7 +76,6 @@ pub fn controls(state: &State) -> Element {
         widget::Slider::new(0.0..=1.0, volume, |v| {
             Message::ControlEvent(ControlEvent::Volume(v))
         })
-        .style(theme::Slider::Volume)
         .step(0.05)
         .width(80),
     )
@@ -88,7 +87,6 @@ pub fn controls(state: &State) -> Element {
         |v| Message::ControlEvent(ControlEvent::Seek(v)),
     )
     .on_release(Message::ControlEvent(ControlEvent::Released))
-    .style(theme::Slider::Seek)
     .step(1.0);
 
     widget::container(
@@ -97,19 +95,11 @@ pub fn controls(state: &State) -> Element {
             widget::row![play_pause, duration_text, volume_button, volume_slider]
                 .width(Length::Fill)
                 .height(Length::Fill)
-                .align_items(Alignment::Center)
+                .align_y(Alignment::Center)
         ]
         .width(Length::Fill)
         .height(Length::Fill),
     )
-    .style(theme::Container::Custom(|_theme| {
-        widget::container::Appearance {
-            text_color: None,
-            background: Some(Background::Color(color!(242, 241, 236))),
-            border: iced::Border::default(),
-            shadow: iced::Shadow::default(),
-        }
-    }))
     .padding(Padding {
         top: 0.0,
         right: 10.0,

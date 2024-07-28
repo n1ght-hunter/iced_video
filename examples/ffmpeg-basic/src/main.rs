@@ -6,11 +6,15 @@ use iced::{
     executor,
     futures::SinkExt,
     widget::{self, container, image},
-    Application, Color, Command, Element, Length,
+    Application, Color, Task, Element, Length,
 };
 
-fn main() {
-    App::run(Default::default()).unwrap();
+fn main() -> iced::Result {
+    iced::application(
+        App::title,
+        App::update,
+        App::view,
+    ).run_with(App::new)
 }
 
 #[derive(Clone, Debug)]
@@ -22,21 +26,14 @@ struct App {
     frame: Option<iced::widget::image::Handle>,
 }
 
-impl Application for App {
-    type Executor = executor::Default;
+impl  App {
 
-    type Message = Message;
-
-    type Theme = iced::Theme;
-
-    type Flags = ();
-
-    fn new(_flags: Self::Flags) -> (Self, iced::Command<Self::Message>) {
-        (App { frame: None }, Command::none())
+    fn new() -> (Self, iced::Task<Message>) {
+        (App { frame: None }, Task::none())
     }
 
-    fn subscription(&self) -> iced::Subscription<Self::Message> {
-        iced::subscription::channel("some rnado id", 100, |mut ouput| async move {
+    fn subscription(&self) -> iced::Subscription<Message> {
+        iced::Subscription::run(|| iced::stream::channel( 100, |mut ouput| async move {
             let (mut player, reciver) = player::Player::start();
 
             let url = Path::new(
@@ -59,20 +56,20 @@ impl Application for App {
                     iced::futures::pending!()
                 }
             }
-        })
+        }))
     }
 
     fn title(&self) -> String {
         String::from("Video Player")
     }
 
-    fn update(&mut self, message: Self::Message) -> iced::Command<Self::Message> {
+    fn update(&mut self, message: Message) -> iced::Task<Message> {
         match message {
             Message::Frame(frame) => {
                 self.frame = Some(frame);
             }
         }
-        Command::none()
+        Task::none()
     }
 
     fn view(&self) -> iced::Element<Message> {
@@ -84,14 +81,9 @@ impl Application for App {
             )
             .explain(Color::BLACK)
         } else {
-            Element::from(
-                widget::Image::new(iced::widget::image::Handle::from_memory([]))
-                    .width(Length::Fill)
-                    .height(Length::Fill),
-            )
+            widget::text!("No frame").into()
         })
-        .center_x()
-        .center_y()
+        .center(Length::Fill)
         .padding(10)
         .width(Length::Fill)
         .height(Length::Fill)

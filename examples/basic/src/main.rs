@@ -1,18 +1,21 @@
 use iced::{
     executor,
-    widget::{self, container, button, text},
-    Application, Command, Element,
+    widget::{self, button, container, text},
+    Application, Task, Element, Length,
 };
 use iced_video::{
     viewer::{video_view, ControlEvent},
     AdvancedPlayer, BasicPlayer, PlayerBuilder, PlayerHandler, PlayerMessage,
 };
 
-fn main() {
-    // uncomment to see debug messages from gstreamer
-    // std::env::set_var("GST_DEBUG", "3");
-    App::run(Default::default()).unwrap();
+fn main() -> iced::Result {
+    iced::application(
+        App::title,
+        App::update,
+        App::view,
+    ).run_with(App::new)
 }
+
 
 #[derive(Clone, Debug)]
 enum Message {
@@ -27,16 +30,10 @@ struct App {
     id: String,
 }
 
-impl Application for App {
-    type Executor = executor::Default;
+impl App {
 
-    type Message = Message;
 
-    type Theme = iced::Theme;
-
-    type Flags = ();
-
-    fn new(_flags: Self::Flags) -> (Self, iced::Command<Self::Message>) {
+    fn new() -> (Self, iced::Task<Message>) {
         let mut player_handler = PlayerHandler::default();
         let url =
             "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
@@ -48,11 +45,11 @@ impl Application for App {
                 seek: None,
                 id: url.to_string(),
             },
-            Command::none(),
+            Task::none(),
         )
     }
 
-    fn subscription(&self) -> iced::Subscription<Self::Message> {
+    fn subscription(&self) -> iced::Subscription<Message> {
         self.player_handler.subscriptions().map(Message::Video)
     }
 
@@ -60,7 +57,7 @@ impl Application for App {
         String::from("Video Player")
     }
 
-    fn update(&mut self, message: Self::Message) -> iced::Command<Self::Message> {
+    fn update(&mut self, message: Message) -> iced::Task<Message> {
         match message {
             Message::Video(event) => {
                 self.player_handler.handle_event(event);
@@ -102,7 +99,7 @@ impl Application for App {
                 }
             },
         }
-        Command::none()
+        Task::none()
     }
 
     fn view(&self) -> iced::Element<Message> {
@@ -126,6 +123,6 @@ impl Application for App {
             widget::Text::new("No player").size(30).into()
         };
 
-        container(player).center_x().center_y().into()
+        container(player).center(Length::Fill).into()
     }
 }

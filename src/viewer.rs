@@ -40,12 +40,12 @@ where
         + iced::advanced::image::Renderer
         + iced::advanced::svg::Renderer
         + 'static,
-    Theme: widget::button::StyleSheet
-        + widget::text_input::StyleSheet
-        + widget::text::StyleSheet
-        + widget::slider::StyleSheet
-        + widget::container::StyleSheet
-        + widget::svg::StyleSheet + 'a,
+    Theme: widget::button::Catalog
+        + widget::text_input::Catalog
+        + widget::text::Catalog
+        + widget::slider::Catalog
+        + widget::container::Catalog
+        + widget::svg::Catalog + 'a,
     F: Fn(ControlEvent) -> Message + 'static + Clone,
     <Renderer as iced::advanced::image::Renderer>::Handle: From<image::Handle>,
 {
@@ -60,7 +60,7 @@ where
             .height(i_height)
             .width(i_width)
     } else {
-        iced::widget::image(image::Handle::from_pixels(0, 0, vec![]))
+        iced::widget::image(image::Handle::from_rgba(0, 0, vec![]))
     };
     let duration = player.get_duration().as_secs();
     let position = if let Some(seek) = seek_amount {
@@ -122,7 +122,7 @@ where
         widget::row![play_pause, duration_text, volume_button, volume_slider]
             .width(Length::Fill)
             .height(60)
-            .align_items(Alignment::Center)
+            .align_y(Alignment::Center)
     ])
     .align_y(Vertical::Bottom)
     .align_x(Horizontal::Left)

@@ -1,37 +1,6 @@
-mod application;
-mod button;
-mod container;
-mod slider;
-mod svg;
-mod text;
 
-pub use application::Application;
-pub use button::Button;
-pub use container::Container;
-pub use slider::Slider;
-pub use svg::Svg;
-pub use text::Text;
+use iced::{color, Color};
 
-use iced::Color;
-
-/// color macro for use rgb or rgba with 255 instead of 1
-macro_rules! color {
-    ($red:expr, $green:expr, $blue:expr) => {
-        Color::from_rgb(
-            $red as f32 / 255.0,
-            $green as f32 / 255.0,
-            $blue as f32 / 255.0,
-        )
-    };
-    ($red:expr, $green:expr, $blue:expr, $opacity:expr) => {
-        Color::from_rgba(
-            $red as f32 / 255.0,
-            $green as f32 / 255.0,
-            $blue as f32 / 255.0,
-            $opacity,
-        )
-    };
-}
 
 pub struct Theme {
     pub text: Color,

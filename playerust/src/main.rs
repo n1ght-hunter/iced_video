@@ -6,34 +6,27 @@ pub mod view;
 pub mod helpers;
 pub mod components;
 
-use iced::{executor, Application};
+use iced::{executor};
 use iced_video::BasicPlayer;
 use state::State;
 use subscriptions::subscriptions;
 use update::{update, Message};
 use view::view;
 
-fn main() {
+fn main() -> iced::Result {
     env_logger::init();
-    State::run(Default::default()).unwrap();
+    iced::application(
+        State::title,
+        State::update,
+        State::view,
+    ).subscription(State::subscription).run_with(State::new)
 }
 
-pub type Element<'a> = iced::Element<'a, Message,theme::Theme, iced::Renderer>;
+pub type Element<'a> = iced::Element<'a, Message,iced::Theme, iced::Renderer>;
 
-impl Application for State {
-    type Executor = executor::Default;
+impl  State {
 
-    type Message = Message;
-
-    type Theme = theme::Theme;
-
-    type Flags = ();
-
-    fn new(_flags: Self::Flags) -> (Self, iced::Command<Self::Message>) {
-        State::new()
-    }
-
-    fn subscription(&self) -> iced::Subscription<Self::Message> {
+    fn subscription(&self) -> iced::Subscription<Message> {
         subscriptions(self)
     }
 
@@ -51,7 +44,7 @@ impl Application for State {
         }
     }
 
-    fn update(&mut self, message: Self::Message) -> iced::Command<Message> {
+    fn update(&mut self, message: Message) -> iced::Task<Message> {
         update(self, message)
     }
 

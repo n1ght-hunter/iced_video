@@ -33,6 +33,6 @@ impl playbin_core::IcedImage for Frame {
             dest_line.copy_from_slice(&source_line[..])
         }
 
-        image::Handle::from_pixels(self.width() as u32, self.height() as u32, buffer)
+        image::Handle::from_rgba(self.width() as u32, self.height() as u32, buffer)
     }
 }
